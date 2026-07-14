@@ -54,7 +54,7 @@ async function main() {
 
   const supabase = createClient(url, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
-    realtime: { transport: ws },
+    realtime: { transport: ws as any },
   });
 
   console.log("1. Checking master intraday batch schedule...");
