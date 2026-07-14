@@ -1,0 +1,33 @@
+{
+  "name": "job-track-central",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "tsx --test src/lib/intraday-schedule.test.ts src/lib/report-generators/intraday.test.ts src/lib/report-generators/critical.test.ts src/lib/report-generators/error.test.ts",
+    "test:db": "tsx scripts/test-db-integration.ts"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.108.2",
+    "next": "^15.3.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@tailwindcss/postcss": "^4.1.8",
+    "@types/node": "^22.15.29",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "eslint": "^9.28.0",
+    "eslint-config-next": "^15.3.3",
+    "tailwindcss": "^4.1.8",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "ws": "^8.21.0"
+  }
+}
