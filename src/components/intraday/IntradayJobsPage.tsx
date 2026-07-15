@@ -20,7 +20,7 @@ interface UseIntradayJobsResult {
   loading: boolean;
   error: string | null;
   updateFinishedTime: (id: string, time: string | null) => Promise<void>;
-  mutate?: () => Promise<any>; // from SWR/React Query
+  mutate?: () => Promise<DailyIntradayLog[] | undefined>; // from SWR/React Query
 }
 
 type ImportPayload = {

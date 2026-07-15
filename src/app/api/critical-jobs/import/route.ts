@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       if (!Array.isArray(importData)) {
         throw new Error("Invalid payload format: expected an array.");
       }
-    } catch (_error) {
+    } catch {
       return NextResponse.json(
         { error: "Invalid request body." },
         { status: 400 },
