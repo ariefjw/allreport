@@ -1,5 +1,5 @@
 import type { DailyMonitoringLog, DailyIntradayLog, MasterJob } from "@/types";
-import { getOperationalDate } from "@/lib/utils";
+import { getOperationalDate, getCriticalOperationalDate } from "@/lib/operational-date";
 
 const MASTER_JOBS: Omit<MasterJob, "id">[] = [
   { jobName: "cbs_tradefinance_to_landing", defaultScheduleTime: "22:30:00", isCrossDay: true },
@@ -60,7 +60,7 @@ function buildScheduledTimestamp(
 }
 
 export function generateMockCriticalJobs(): DailyMonitoringLog[] {
-  const operationalDate = getOperationalDate();
+  const operationalDate = getCriticalOperationalDate();
   const now = new Date();
 
   return MASTER_JOBS.map((job, index) => {

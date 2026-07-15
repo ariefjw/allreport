@@ -1,13 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DbDailyMonitoringLog, DbMasterJob } from "@/lib/db/types";
 import {
-  getOperationalDate,
+  getCriticalOperationalDate,
   buildScheduledTimestamp,
   combineScheduledDateWithTime,
 } from "@/lib/operational-date";
 
 export async function ensureCriticalDailyLogs(supabase: SupabaseClient) {
-  const operationalDate = getOperationalDate();
+  const operationalDate = getCriticalOperationalDate();
 
   const { count } = await supabase
     .from("daily_monitoring_log")
@@ -41,7 +41,7 @@ export async function ensureCriticalDailyLogs(supabase: SupabaseClient) {
 }
 
 export async function syncCriticalRunningStatus(supabase: SupabaseClient) {
-  const operationalDate = getOperationalDate();
+  const operationalDate = getCriticalOperationalDate();
   const now = new Date().toISOString();
 
   const { error } = await supabase
@@ -58,7 +58,7 @@ export async function getCriticalJobs(supabase: SupabaseClient) {
   await ensureCriticalDailyLogs(supabase);
   await syncCriticalRunningStatus(supabase);
 
-  const operationalDate = getOperationalDate();
+  const operationalDate = getCriticalOperationalDate();
   const { data, error } = await supabase
     .from("daily_monitoring_log")
     .select("*")

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/providers/AuthProvider";
 import type { DailyMonitoringLog } from "@/types";
-import { getOperationalDate } from "@/lib/operational-date";
+import { getCriticalOperationalDate } from "@/lib/operational-date";
 
 export function useCriticalJobs() {
   const { isReady, isAuthenticated } = useAuth();
@@ -43,7 +43,7 @@ export function useCriticalJobs() {
     if (!isReady || !isAuthenticated) return;
 
     const supabase = createClient();
-    const operationalDate = getOperationalDate();
+    const operationalDate = getCriticalOperationalDate();
 
     const channel = supabase
       .channel("critical-jobs-realtime")
@@ -94,5 +94,24 @@ export function useCriticalJobs() {
     setJobs((prev) => prev.map((j) => (j.id === id ? updated : j)));
   }, []);
 
-  return { jobs, loading, error, updateEndTime, markFailed, refresh };
+  const bulkImportEndTimes = useCallback(
+    async (data: { id: string; endTime: string }[]) => {
+      const res = await fetch("/api/critical-jobs/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Failed to import jobs");
+      }
+      
+      // Refresh all data from server to ensure consistency
+      await refresh();
+    },
+    [refresh]
+  );
+
+  return { jobs, loading, error, updateEndTime, markFailed, refresh, bulkImportEndTimes };
 }

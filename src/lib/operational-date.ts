@@ -15,31 +15,64 @@ export function getOperationalDate(): string {
   });
 }
 
+export function getCriticalOperationalDate(): string {
+  const now = new Date();
+  
+  const wibString = now.toLocaleString("en-US", {
+    timeZone: WIB,
+    hour12: false,
+  });
+  const wibDate = new Date(wibString);
+  const hours = wibDate.getHours();
+
+  if (hours < 21) {
+    wibDate.setDate(wibDate.getDate() - 1);
+  }
+
+  const yyyy = wibDate.getFullYear();
+  const mm = String(wibDate.getMonth() + 1).padStart(2, "0");
+  const dd = String(wibDate.getDate()).padStart(2, "0");
+  
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export function buildScheduledTimestamp(
   operationalDate: string,
   scheduleTime: string,
   isCrossDay: boolean
 ): string {
-  const d = new Date(`${operationalDate}T00:00:00${WIB_OFFSET}`);
+  const dateObj = new Date(`${operationalDate}T12:00:00Z`);
   if (!isCrossDay) {
-    d.setDate(d.getDate() + 1);
+    dateObj.setUTCDate(dateObj.getUTCDate() + 1);
   }
-  const parts = scheduleTime.split(":").map(Number);
-  const h = parts[0] ?? 0;
-  const m = parts[1] ?? 0;
-  const s = parts[2] ?? 0;
-  d.setHours(h, m, s, 0);
-  return d.toISOString();
+  const targetDateStr = dateObj.toISOString().split("T")[0];
+
+  const parts = scheduleTime.split(":");
+  const h = String(parts[0] ?? 0).padStart(2, "0");
+  const m = String(parts[1] ?? 0).padStart(2, "0");
+  const s = String(parts[2] ?? 0).padStart(2, "0");
+
+  return new Date(`${targetDateStr}T${h}:${m}:${s}${WIB_OFFSET}`).toISOString();
 }
 
 export function combineScheduledDateWithTime(
   scheduledTimestamp: string,
   timeStr: string
 ): string {
-  const scheduled = new Date(scheduledTimestamp);
-  const parts = timeStr.split(":").map(Number);
-  scheduled.setHours(parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0, 0);
-  return scheduled.toISOString();
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: WIB,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
+  const wibDateStr = fmt.format(new Date(scheduledTimestamp));
+
+  const parts = timeStr.split(":");
+  const h = String(parts[0] ?? 0).padStart(2, "0");
+  const m = String(parts[1] ?? 0).padStart(2, "0");
+  const s = String(parts[2] ?? 0).padStart(2, "0");
+
+  return new Date(`${wibDateStr}T${h}:${m}:${s}${WIB_OFFSET}`).toISOString();
 }
 
 export function combineOperationalDateWithTime(
