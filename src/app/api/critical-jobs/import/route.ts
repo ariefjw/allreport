@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       if (!Array.isArray(importData)) {
         throw new Error("Invalid payload format: expected an array.");
       }
-    } catch (error) {
+    } catch (_error) {
       return NextResponse.json(
         { error: "Invalid request body." },
         { status: 400 },
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       const [hours, minutes, seconds] = endTime.split(":").map(Number);
 
       // Create a new Date object for the end time, starting with the scheduled date's components
-      let end = new Date(scheduled);
+      const end = new Date(scheduled);
       // Set the time from the payload. Using setUTCHours for ISO string consistency.
       end.setUTCHours(hours, minutes, seconds, 0);
 

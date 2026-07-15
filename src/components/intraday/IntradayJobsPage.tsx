@@ -15,6 +15,14 @@ import { formatTimeHM, getTodayDisplay, isTimeReached } from "@/lib/utils";
 import type { DailyIntradayLog } from "@/types";
 import { Upload } from "lucide-react";
 
+interface UseIntradayJobsResult {
+  batches: DailyIntradayLog[];
+  loading: boolean;
+  error: string | null;
+  updateFinishedTime: (id: string, time: string | null) => Promise<void>;
+  mutate?: () => Promise<any>; // from SWR/React Query
+}
+
 type ImportPayload = {
   id: string;
   finishedTime: string; // "HH:mm"
@@ -54,7 +62,7 @@ export function IntradayJobsPage() {
   // NOTE: The `useIntradayJobs` hook should expose a `mutate` function (from SWR/React Query)
   // to allow for programmatic re-fetching of data.
   const { batches, loading, error, updateFinishedTime, mutate } =
-    useIntradayJobs() as any;
+    useIntradayJobs() as UseIntradayJobsResult;
 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importText, setImportText] = useState("");
@@ -101,8 +109,12 @@ export function IntradayJobsPage() {
         // Fallback if mutate is not available
         window.location.reload();
       }
-    } catch (e: any) {
-      setImportError(e.message);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        setImportError(e.message);
+      } else {
+        setImportError("An unknown error occurred during import.");
+      }
     } finally {
       setIsImporting(false);
     }
