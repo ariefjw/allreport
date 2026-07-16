@@ -23,40 +23,30 @@ export function CriticalJobsPage() {
   const runningCount = jobs.filter((j) => j.status === "*RUNNING*").length;
   const failedCount = jobs.filter((j) => j.status === "*FAILED*").length;
 
-  const handleImport = async (text: string) => {
-    const lines = text.split('\n'); 
-    const importData: { id: string; endTime: string }[] = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      // Look for a line that starts with a number and a dot, but make it optional.
-      // Then capture the rest of the line as the job name.
-      const jobMatch = line.match(/^(?:\d{1,2}\.\s*)?(.+)/);
-
-      if (jobMatch && jobMatch[1]) {
-        const jobName = jobMatch[1].trim();
-        const nextLine = lines[i + 1]?.trim();
-
-        if (nextLine) {
-          // Look for a time pattern, which can be HH:mm - HH:mm or just HH:mm
-          const timeMatch = nextLine.match(/(?:(\d{2}:\d{2})\s*-\s*)?(\d{2}:\d{2})/);
-          if (timeMatch && timeMatch[2]) {
-            const endTime = timeMatch[2];
-
-            // Find the job in our state that matches the parsed name
-            const job = jobs.find(
-              (j) => j.jobName.trim().toLowerCase() === jobName.toLowerCase()
-            );
-
-            if (job) {
-              importData.push({ id: job.id, endTime });
-              // Skip the next line since we've processed it as part of the current job
-              i++;
-            }
-          }
-        }
+  const handleImport = async () => {
+  const lines = importText.split("\n");
+  const payload = lines
+    .map(line => {
+      // REGEX KETAT: Hanya ambil jika ada format angka jam:menit
+      // Contoh yang cocok: "08:30" atau "22:41"
+      const match = line.match(/(\d{2}:\d{2})/);
+      
+      // Filter tambahan: Pastikan baris TIDAK mengandung kata "WAITING" atau "RUNNING"
+      const isInvalidStatus = /WAITING|RUNNING/i.test(line);
+      
+      if (match && !isInvalidStatus) {
+        // Cari ID job berdasarkan nama atau urutan di daftar batches Anda
+        // ... (logika pencarian ID Anda)
+        return { id: batch.id, endTime: match[1] + ":00" };
       }
-    }
+      return null;
+    })
+    .filter(item => item !== null); // Hapus semua yang gagal validasi
+
+  // Kirim payload yang sudah bersih ke API
+  // ...
+};
+
 
     if (importData.length === 0) {
       alert("No valid job times were found in the pasted text.");
