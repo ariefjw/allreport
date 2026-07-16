@@ -2,19 +2,6 @@ import type { DailyIntradayLog } from "@/types";
 import { formatDateReport, isTimeReached } from "@/lib/utils";
 import { INTRADAY_JOB_NAME } from "@/lib/mock-data";
 
-// Helper untuk mengambil jam mutlak GMT+7 (WIB) tanpa terpengaruh zona waktu server
-function getWibTimeParts(isoString: string) {
-  const d = new Date(isoString);
-  // Geser waktu UTC ke WIB (+7 jam)
-  const wibDate = new Date(d.getTime() + 7 * 3600000);
-  
-  return {
-    hh: String(wibDate.getUTCHours()).padStart(2, "0"),
-    mm: String(wibDate.getUTCMinutes()).padStart(2, "0"),
-    ss: String(wibDate.getUTCSeconds()).padStart(2, "0"),
-  };
-}
-
 export function generateIntradayReportText(batches: DailyIntradayLog[]): string {
   const now = new Date();
   const dateStr = formatDateReport(now);
@@ -22,13 +9,20 @@ export function generateIntradayReportText(batches: DailyIntradayLog[]): string 
   const visibleBatches = batches.filter((b) => isTimeReached(b.startedTime, now));
 
   const batchLines = visibleBatches.map((batch) => {
-    // startedTime biasanya "HH:mm:ss"
-    const started = batch.startedTime.substring(0, 5); 
+    // Ambil jam start (HH:mm)
+    const started = batch.startedTime.substring(0, 5);
     
+    // Ambil jam finished (HH:mm:ss) dari database
     let finished = "";
     if (batch.finishedTimestamp) {
-      const { hh, mm } = getWibTimeParts(batch.finishedTimestamp);
-      finished = `${hh}:${mm}`;
+        // Karena sekarang sudah tersimpan dalam format WIB yang benar di DB,
+        // kita tinggal ambil 5 karakter pertama (HH:mm)
+        const rawFinished = batch.finishedTimestamp.toString();
+        // Coba cari pola HH:mm:ss atau HH:mm
+        const match = rawFinished.match(/(\d{2}):(\d{2})/);
+        if (match) {
+            finished = `${match[1]}:${match[2]}`;
+        }
     }
 
     return `- batch ${batch.batchNumber}: started ${started}${finished ? ` finished ${finished}` : ""}`;
@@ -46,8 +40,8 @@ export function generateIntradayFinishedTimeText(batches: DailyIntradayLog[]): s
   return batches
     .map((batch) => {
       if (!batch.finishedTimestamp) return "";
-      const { hh, mm, ss } = getWibTimeParts(batch.finishedTimestamp);
-      return `${hh}:${mm}:${ss}`;
+      // Langsung ambil HH:mm:ss tanpa parsing rumit
+      return batch.finishedTimestamp.substring(0, 8);
     })
     .join("\n");
 }
