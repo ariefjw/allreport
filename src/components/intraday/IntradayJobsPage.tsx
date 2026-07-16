@@ -324,11 +324,17 @@ function BatchCard({
               <TimeInput
   value={finishedDisplay}
   onChange={(time) => {
-    // time yang diterima dari TimeInput adalah "084400"
-    // Kita ubah kembali menjadi "08:44:00" sebelum dikirim ke API
+    // TAMBAHKAN PENGECEKAN INI:
+    if (!time) {
+      onFinishedTimeChange(batch.id, null);
+      return;
+    }
+
+    // Sekarang TypeScript tahu 'time' adalah string karena pengecekan di atas
     const formatted = time.length === 6 
       ? `${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}` 
       : time;
+      
     onFinishedTimeChange(batch.id, formatted);
   }}
   label="Finished"
