@@ -18,52 +18,63 @@ export function CriticalJobsPage() {
   const doneCount = jobs.filter((j) => j.status === "*DONE*").length;
   const runningCount = jobs.filter((j) => j.status === "*RUNNING*").length;
   const failedCount = jobs.filter((j) => j.status === "*FAILED*").length;
-
   const handleImport = async (text: string) => {
-  const lines = text.split('\n');
   const importData: { id: string; endTime: string }[] = [];
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      
-      // 1. LOGIKA BARU: Jika ketemu WAITING, stop semua proses parsing ke bawah!
-      if (/WAITING/i.test(line)) {
-        break; 
-      }
+  // 1. Pecah teks berdasarkan pola angka di awal baris (misal: "1.", "2.", dst)
+  // Ini akan memisahkan setiap job menjadi satu blok teks utuh
+  const jobBlocks = text.split(/(?=\n\d+\.)/);
 
-      // 2. Bersihkan nomor di depan nama job (contoh: "40. cbs_lll_to_landing" -> "cbs_lll_to_landing")
-      const cleanLineName = line.replace(/^\d+[\.\-]?\s*/, '').trim().toLowerCase();
-      
-      const job = jobs.find(j => 
-        line.includes(j.jobName) || 
-        cleanLineName === j.jobName.toLowerCase()
-      );
-      
-      if (job) {
-        // Ambil baris saat ini dan baris di bawahnya untuk mencari jam
-        const searchArea = line + " " + (lines[i + 1] || "");
-        const match = searchArea.match(/(\d{2}:\d{2})/);
+  for (const block of jobBlocks) {
+    const trimmedBlock = block.trim();
+    if (!trimmedBlock) continue;
+
+    // 2. Ambil baris pertama sebagai nama job
+    const lines = trimmedBlock.split('\n');
+    const firstLine = lines[0].trim();
+
+    // Bersihkan nomor di depan nama job (contoh: "1.cbs_tradefinance_to_landing" -> "cbs_tradefinance_to_landing")
+    const jobNameFromText = firstLine.replace(/^\d+\.\s*/, '').trim().toLowerCase();
+
+    // 3. Cari job yang cocok di dalam state internal database
+    const job = jobs.find(j => 
+      jobNameFromText === j.jobName.toLowerCase() || 
+      j.jobName.toLowerCase().includes(jobNameFromText)
+    );
+
+    if (job) {
+      // 4. Pastikan blok job ini memiliki status *DONE*
+      if (/\*DONE\*/i.test(trimmedBlock)) {
+        // Ekstraksi rentang waktu seperti "22:30 - 22:41"
+        // Kita hanya ingin mengambil jam KEDUA (waktu selesai)
+        const timeRangeMatch = trimmedBlock.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
         
-        // Hanya ambil jika ada jam DAN tidak ada tulisan RUNNING di sekitarnya
-        if (match && !/RUNNING/i.test(searchArea)) {
-          importData.push({ id: job.id, endTime: match[1] + ":00" });
+        if (timeRangeMatch && timeRangeMatch[2]) {
+          const endTime = timeRangeMatch[2]; // Ini akan mengambil "22:41"
+          importData.push({ id: job.id, endTime: endTime + ":00" });
         }
+      } 
+      // 5. Jika blok job ini berisi *RUNNING* atau *WAITING*, abaikan saja secara aman
+      else if (/\*RUNNING\*|\*WAITING\*/i.test(trimmedBlock)) {
+        console.log(`Job ${job.jobName} skipped karena belum DONE.`);
       }
     }
+  }
 
-    if (importData.length === 0) {
-      alert("Tidak ada data waktu (DONE) yang valid untuk di-import.");
-      return;
-    }
+  if (importData.length === 0) {
+    alert("Tidak ada data waktu selesai (DONE) yang valid untuk di-import.");
+    return;
+  }
 
-    try {
-      await bulkImportEndTimes(importData);
-      alert(`Berhasil import ${importData.length} job selesai.`);
-      setIsImportModalOpen(false);
-    } catch (err) {
-      alert(`Import gagal: ${err instanceof Error ? err.message : "Unknown error"}`);
-    }
-  };
+  try {
+    await bulkImportEndTimes(importData);
+    alert(`Berhasil mengimpor ${importData.length} job dengan status DONE.`);
+    setIsImportModalOpen(false);
+  } catch (err) {
+    alert(`Import gagal: ${err instanceof Error ? err.message : "Unknown error"}`);
+  }
+};
+
 
 
 
