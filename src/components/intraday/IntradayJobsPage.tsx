@@ -282,6 +282,7 @@ function BatchCard({
     const ss = String(wibDate.getUTCSeconds()).padStart(2, "0");
     finishedDisplay = `${hh}${mm}${ss}`;
   }
+  
 
   return (
     <div
@@ -321,10 +322,17 @@ function BatchCard({
           {isActive && (
             <div className="w-28">
               <TimeInput
-                value={finishedDisplay}
-                onChange={(time) => onFinishedTimeChange(batch.id, time)}
-                label="Finished"
-              />
+  value={finishedDisplay}
+  onChange={(time) => {
+    // time yang diterima dari TimeInput adalah "084400"
+    // Kita ubah kembali menjadi "08:44:00" sebelum dikirim ke API
+    const formatted = time.length === 6 
+      ? `${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}` 
+      : time;
+    onFinishedTimeChange(batch.id, formatted);
+  }}
+  label="Finished"
+/>
             </div>
           )}
           {batch.finishedTimestamp && (
