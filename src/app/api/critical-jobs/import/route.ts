@@ -56,13 +56,20 @@ export async function POST(request: Request) {
       const jobData = jobsToUpdate.find((j) => j.id === id);
 
       if (!jobData) {
-        // Return dummy response if skipped
+        return Promise.resolve({ data: null, error: null, count: 0 });
+      }
+
+      // ---------------------------------------------------------------------
+      // FIX ISSUE 2: Blokir data siluman!
+      // Jika endTime kosong, undefined, atau hanya teks (misal: "WAITING"), 
+      // batalkan update untuk baris ini (skip) agar tidak terisi otomatis.
+      // ---------------------------------------------------------------------
+      if (!endTime || !/^\d{1,2}:\d{2}/.test(endTime.trim())) {
         return Promise.resolve({ data: null, error: null, count: 0 });
       }
 
       const scheduled = new Date(jobData.scheduled_timestamp);
       
-      // PERBAIKAN: Jika detik tidak ada, pastikan tidak menjadi undefined
       const [hours, minutes, seconds] = endTime.split(":").map(Number);
       const safeHours = hours || 0;
       const safeMinutes = minutes || 0;
@@ -70,9 +77,14 @@ export async function POST(request: Request) {
 
       const end = new Date(scheduled);
       
-      // Gunakan nilai yang sudah aman (safe)
-      end.setUTCHours(safeHours, safeMinutes, safeSeconds, 0);
+      // ---------------------------------------------------------------------
+      // FIX ISSUE 1: Sinkronisasi Zona Waktu Vercel vs WIB
+      // Kurangi 7 jam saat menyimpan ke database (contoh: 22 jadi 15).
+      // Saat diambil ke layar, otomatis ditambah 7 jam kembali ke 22.
+      // ---------------------------------------------------------------------
+      end.setUTCHours(safeHours - 7, safeMinutes, safeSeconds, 0);
 
+      // Logika perpindahan hari (Jika job baru selesai lewat tengah malam)
       if (end < scheduled) {
         end.setUTCDate(end.getUTCDate() + 1);
       }
@@ -88,7 +100,7 @@ export async function POST(request: Request) {
         })
         .eq("id", id)
         .is("end_timestamp", null)
-        .select(); // Tambahkan .select() agar hasil update bisa terbaca count-nya
+        .select(); 
     });
 
     try {
@@ -98,7 +110,7 @@ export async function POST(request: Request) {
       results.forEach((res) => {
         if (res.error) {
           console.warn(`Failed to update critical job`, res.error);
-        } else if (res.data && res.data.length > 0) { // Perbaikan pengecekan keberhasilan
+        } else if (res.data && res.data.length > 0) {
           successfulUpdates++;
         }
       });
@@ -108,10 +120,7 @@ export async function POST(request: Request) {
         successfulUpdates,
       });
     } catch (error) {
-      console.error(
-        "Error during bulk critical job import DB operation:",
-        error,
-      );
+      console.error("Error during bulk critical job import DB operation:", error);
       return NextResponse.json(
         { error: "An unexpected error occurred during the database update." },
         { status: 500 },
