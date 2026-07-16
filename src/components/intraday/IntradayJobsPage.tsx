@@ -57,24 +57,27 @@ function parseIntradayReport(
 }
 
 // =========================================================================
-// HELPER: Trik manipulasi string ISO dari DB agar jamnya berubah +7 (WIB),
-// namun bentuk stringnya tetap utuh agar TimeInput tidak crash/kosong.
+// HELPER: Trik manipulasi jam menggunakan Regex agar format asli utuh
 // =========================================================================
 function shiftToWIB(timestamp: string | null): string {
   if (!timestamp) return "";
-  if (!timestamp.includes("T")) return timestamp;
   
   try {
-    const d = new Date(timestamp);
-    const wibDate = new Date(d.getTime() + 7 * 3600000);
+    // Ganti spasi dengan T hanya untuk proses perhitungan tanggal di JS
+    const parseableStr = timestamp.replace(" ", "T");
+    const d = new Date(parseableStr);
     
+    // Jika format aneh, kembalikan teks aslinya
+    if (isNaN(d.getTime())) return timestamp;
+
+    const wibDate = new Date(d.getTime() + 7 * 3600000);
     const hh = String(wibDate.getUTCHours()).padStart(2, "0");
     const mm = String(wibDate.getUTCMinutes()).padStart(2, "0");
     const ss = String(wibDate.getUTCSeconds()).padStart(2, "0");
     
-    // Ganti angka jam asli dengan jam WIB, biarkan karakter lainnya sama persis
-    const [datePart, timePart] = timestamp.split("T");
-    return `${datePart}T${hh}:${mm}:${ss}${timePart.substring(8)}`;
+    // KUNCI: Cari format jam (misal 01:44:00) di string asli (2026-07-16 01:44:00+00) 
+    // lalu timpa dengan jam WIB (08:44:00). Struktur sisanya akan 100% utuh!
+    return timestamp.replace(/\d{2}:\d{2}:\d{2}/, `${hh}:${mm}:${ss}`);
   } catch {
     return timestamp;
   }
@@ -92,19 +95,25 @@ export function IntradayJobsPage() {
   const completedCount = batches.filter((b) => b.finishedTimestamp).length;
   const now = new Date();
 
-  // FUNGSI INTERCEPTOR: Menyiapkan data khusus untuk Copy Report.
-  // Memastikan format akhirnya murni "HH:mm" agar fungsi bawaan tidak salah potong.
+  // FUNGSI INTERCEPTOR: Menyiapkan data murni HH:mm:ss untuk Copy Report.
   const getReportReadyBatches = () => {
     return batches.map(b => {
-      if (!b.finishedTimestamp || !b.finishedTimestamp.includes("T")) return b;
+      if (!b.finishedTimestamp) return b;
       
-      const d = new Date(b.finishedTimestamp);
-      const shifted = new Date(d.getTime() + 7 * 3600000);
-      const hh = String(shifted.getUTCHours()).padStart(2, '0');
-      const mm = String(shifted.getUTCMinutes()).padStart(2, '0');
-      const ss = String(shifted.getUTCSeconds()).padStart(2, '0');
-      
-      return { ...b, finishedTimestamp: `${hh}:${mm}:${ss}` };
+      try {
+        const parseableStr = b.finishedTimestamp.replace(" ", "T");
+        const d = new Date(parseableStr);
+        if (isNaN(d.getTime())) return b;
+
+        const shifted = new Date(d.getTime() + 7 * 3600000);
+        const hh = String(shifted.getUTCHours()).padStart(2, '0');
+        const mm = String(shifted.getUTCMinutes()).padStart(2, '0');
+        const ss = String(shifted.getUTCSeconds()).padStart(2, '0');
+        
+        return { ...b, finishedTimestamp: `${hh}:${mm}:${ss}` };
+      } catch {
+        return b;
+      }
     });
   };
 
@@ -293,7 +302,7 @@ function BatchCard({
 }) {
   const startedDisplay = batch.startedTime.substring(0, 5);
 
-  // Gunakan data ISO yang jamnya sudah dipalsukan menjadi WIB
+  // Nilai ini sekarang 100% aman dan angkanya sudah menjadi WIB
   const safeFinishedTimestamp = shiftToWIB(batch.finishedTimestamp);
 
   return (
@@ -336,7 +345,7 @@ function BatchCard({
               <TimeInput
                 value={safeFinishedTimestamp}
                 onChange={(time) => {
-                  // PERLINDUNGAN VERCEL: Cegah error "time is possibly null"
+                  // Pelindung agar Vercel tidak error saat time bernilai null
                   if (!time) {
                     onFinishedTimeChange(batch.id, null);
                     return;
