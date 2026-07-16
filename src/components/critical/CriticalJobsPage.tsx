@@ -7,16 +7,12 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { ImportModal } from "@/components/ui/ImportModal";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TimeInput } from "@/components/ui/TimeInput";
-import {
-  generateCriticalReportText,
-  generateCriticalDurationText,
-} from "@/lib/report-generators/critical";
+import { generateCriticalReportText, generateCriticalDurationText } from "@/lib/report-generators/critical";
 import { formatTimeHM, getTodayDisplay } from "@/lib/utils";
 import type { DailyMonitoringLog } from "@/types";
 
 export function CriticalJobsPage() {
-  const { jobs, loading, error, updateEndTime, markFailed, bulkImportEndTimes } =
-    useCriticalJobs();
+  const { jobs, loading, error, updateEndTime, markFailed, bulkImportEndTimes } = useCriticalJobs();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const doneCount = jobs.filter((j) => j.status === "*DONE*").length;
@@ -24,32 +20,37 @@ export function CriticalJobsPage() {
   const failedCount = jobs.filter((j) => j.status === "*FAILED*").length;
 
   const handleImport = async (text: string) => {
-    const lines = text.split("\n");
-    const importData = lines
-      .map((line) => {
-        const match = line.match(/(\d{2}:\d{2})/);
-        const isInvalidStatus = /WAITING|RUNNING/i.test(line);
-        
-        if (match && !isInvalidStatus) {
-          // Cari job yang namanya mirip dengan baris teks atau gunakan urutan
-          const job = jobs.find(j => line.includes(j.jobName));
-          return job ? { id: job.id, endTime: match[1] + ":00" } : null;
+    const lines = text.split('\n');
+    const importData: { id: string; endTime: string }[] = [];
+
+    // Parser yang lebih pintar: mencari baris job dan waktu di baris berikutnya
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line || line.includes("WAITING") || line.includes("RUNNING")) continue;
+
+      const job = jobs.find(j => line.includes(j.jobName));
+      if (job) {
+        const nextLine = lines[i + 1]?.trim();
+        if (nextLine) {
+          // Cari pola HH:mm (mengabaikan teks status lainnya)
+          const match = nextLine.match(/(\d{2}:\d{2})/);
+          if (match) {
+            importData.push({ id: job.id, endTime: match[1] + ":00" });
+          }
         }
-        return null;
-      })
-      .filter((item): item is { id: string; endTime: string } => item !== null);
+      }
+    }
 
     if (importData.length === 0) {
-      alert("No valid job times were found in the pasted text.");
+      alert("No valid completed job times were found. WAITING/RUNNING jobs are ignored.");
       return;
     }
 
     try {
       await bulkImportEndTimes(importData);
-      alert(`Successfully imported end times for ${importData.length} jobs.`);
+      alert(`Successfully imported ${importData.length} jobs.`);
       setIsImportModalOpen(false);
     } catch (err) {
-      console.error("Import failed:", err);
       alert(`Import failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
   };
@@ -63,7 +64,6 @@ export function CriticalJobsPage() {
         actions={
           <>
             <CopyButton label="Copy Update Report" onCopy={async () => generateCriticalReportText(jobs)} />
-            <CopyButton label="Copy Running Duration" variant="secondary" onCopy={async () => generateCriticalDurationText(jobs)} />
             <button onClick={() => setIsImportModalOpen(true)} className="ml-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
               Import Report
             </button>
@@ -71,39 +71,20 @@ export function CriticalJobsPage() {
         }
       />
 
-      <ImportModal
-        isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
-        onImport={handleImport}
-        title="Import Critical Jobs Report"
-        description="Paste the report text below. Jobs with WAITING/RUNNING status will be ignored."
-      />
+      <ImportModal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} onImport={handleImport} title="Import Critical Jobs Report" description="Paste report text. WAITING/RUNNING will be ignored." />
 
       <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
-        {loading && <p className="py-8 text-center text-sm text-slate-500">Loading jobs...</p>}
-        {error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+        <div className="mb-4 grid grid-cols-3 gap-3">
+          <StatCard label="Done" value={doneCount} color="text-green-600" />
+          <StatCard label="Running" value={runningCount} color="text-amber-600" />
+          <StatCard label="Failed" value={failedCount} color="text-red-600" />
+        </div>
 
-        {!loading && !error && (
-          <>
-            <div className="mb-4 grid grid-cols-3 gap-3">
-              <StatCard label="Done" value={doneCount} color="text-green-600" />
-              <StatCard label="Running" value={runningCount} color="text-amber-600" />
-              <StatCard label="Failed" value={failedCount} color="text-red-600" />
-            </div>
-
-            <div className="space-y-2">
-              {jobs.map((job, index) => (
-                <JobCard
-                  key={job.id}
-                  index={index}
-                  job={job}
-                  onEndTimeChange={updateEndTime}
-                  onMarkFailed={markFailed}
-                />
-              ))}
-            </div>
-          </>
-        )}
+        <div className="space-y-2">
+          {jobs.map((job, index) => (
+            <JobCard key={job.id} index={index} job={job} onEndTimeChange={updateEndTime} onMarkFailed={markFailed} />
+          ))}
+        </div>
       </div>
     </>
   );
@@ -124,12 +105,17 @@ function JobCard({ index, job, onEndTimeChange, onMarkFailed }: { index: number;
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-slate-900">{job.jobName}</p>
+          <p className="text-xs text-slate-500 mt-1">Scheduled: {formatTimeHM(new Date(job.scheduledTimestamp))}</p>
         </div>
         <div className="flex items-center gap-3">
           <StatusBadge status={job.status} />
           {job.status === "*RUNNING*" && (
             <div className="w-28">
-              <TimeInput value={job.endTimestamp ? new Date(job.endTimestamp).toTimeString().slice(0, 8) : null} onChange={(t) => onEndTimeChange(job.id, t)} label="End Time" />
+              <TimeInput 
+                value={job.endTimestamp ? new Date(job.endTimestamp).toTimeString().slice(0, 8) : null} 
+                onChange={(t) => onEndTimeChange(job.id, t)} 
+                label="End Time" 
+              />
             </div>
           )}
           {job.status === "*RUNNING*" && (
