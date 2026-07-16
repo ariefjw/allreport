@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { formatHHMMSSMask, hhmmssToTimeString } from "@/lib/utils";
 
 interface TimeInputProps {
@@ -23,6 +23,15 @@ export function TimeInput({
     return value.replace(/:/g, "");
   });
   const [focused, setFocused] = useState(false);
+
+  // KUNCI JAWABAN 1: Sinkronisasi state internal saat nilai dari DB (WIB) masuk
+  useEffect(() => {
+    if (value) {
+      setDigits(value.replace(/:/g, ""));
+    } else {
+      setDigits("");
+    }
+  }, [value]);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
