@@ -278,6 +278,7 @@ function BatchCard({
     const gmt7Date = new Date(d.getTime() + 7 * 3600000);
     const hh = String(gmt7Date.getUTCHours()).padStart(2, "0");
     const mm = String(gmt7Date.getUTCMinutes()).padStart(2, "0");
+    const ss = String(gmt7Date.getUTCSeconds()).padStart(2, "0");
     finishedDisplay = `${hh}:${mm}`;
   }
 
