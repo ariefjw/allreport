@@ -267,11 +267,22 @@ function BatchCard({
   isActive: boolean;
   onFinishedTimeChange: (id: string, time: string | null) => Promise<void>;
 }) {
-  const startedDisplay = batch.startedTime.substring(0, 5);
+  // Perlindungan (Safe Check): Jika startedTime null, tidak akan crash
+  const startedDisplay = batch.startedTime ? batch.startedTime.substring(0, 5) : "";
 
-  const finishedDisplay = batch.finishedTimestamp
-    ? formatTimeHM(new Date(batch.finishedTimestamp))
-    : "";
+  // Ambil waktu selesai dan paksakan ke GMT+7 (WIB) tanpa error
+  let finishedDisplay = "";
+  if (batch.finishedTimestamp) {
+    const dateObj = new Date(batch.finishedTimestamp);
+    if (!isNaN(dateObj.getTime())) { // Pastikan datanya valid
+      finishedDisplay = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Jakarta",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).format(dateObj);
+    }
+  }
 
   return (
     <div
