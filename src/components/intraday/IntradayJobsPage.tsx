@@ -280,7 +280,7 @@ function BatchCard({
     const hh = String(wibDate.getUTCHours()).padStart(2, "0");
     const mm = String(wibDate.getUTCMinutes()).padStart(2, "0");
     const ss = String(wibDate.getUTCSeconds()).padStart(2, "0");
-    finishedDisplay = `${hh}:${mm}:${ss}`;
+    finishedDisplay = `${hh}${mm}${ss}`;
   }
 
   return (
@@ -320,11 +320,11 @@ function BatchCard({
           )}
           {isActive && (
             <div className="w-28">
-            <TimeInput
-      value={finishedDisplay}
-      onChange={(time) => onFinishedTimeChange(batch.id, time)}
-      label="Finished"
-    />
+              <TimeInput
+                value={finishedDisplay}
+                onChange={(time) => onFinishedTimeChange(batch.id, time)}
+                label="Finished"
+              />
             </div>
           )}
           {batch.finishedTimestamp && (
