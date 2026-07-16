@@ -228,7 +228,7 @@ function BatchCard({
   onFinishedTimeChange: (id: string, time: string | null) => Promise<void>;
 }) {
   const startedDisplay = batch.startedTime.substring(0, 5);
-  // Panggil helper Regex kita. Pasti jalan jadi +7.
+  // Panggil helper Regex kita yang sudah terbukti akurat untuk membaca data DB
   const safeFinishedTimestamp = shiftToWIB(batch.finishedTimestamp);
 
   return (
@@ -271,23 +271,8 @@ function BatchCard({
               <TimeInput
                 value={safeFinishedTimestamp}
                 onChange={(time) => {
-                  if (!time) {
-                    onFinishedTimeChange(batch.id, null);
-                    return;
-                  }
-                  
-                  // Ketika user input "08:44:00", kita potong jamnya (08), kurangi 7
-                  // lalu kirim ke API sebagai "01:44:00" agar tidak salah konversi di backend
-                  const match = time.match(/(\d{2}):(\d{2}):(\d{2})/);
-                  if (match) {
-                      let h = parseInt(match[1], 10);
-                      h = h - 7;
-                      if (h < 0) h += 24; // Mencegah jam minus
-                      const timeToSend = `${String(h).padStart(2, '0')}:${match[2]}:${match[3]}`;
-                      onFinishedTimeChange(batch.id, timeToSend);
-                  } else {
-                      onFinishedTimeChange(batch.id, time);
-                  }
+                  // Kirim data murni, backend sudah otomatis convert ke UTC!
+                  onFinishedTimeChange(batch.id, time);
                 }}
                 label="Finished"
               />
@@ -303,3 +288,4 @@ function BatchCard({
     </div>
   );
 }
+
