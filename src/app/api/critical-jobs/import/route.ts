@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 type ImportPayload = {
-  id: string; // This is the UUID of the daily_monitoring_log entry
-  endTime: string; // "HH:mm:ss"
+  id: string; 
+  endTime: string; 
 }[];
 
 export async function POST(request: Request) {
@@ -37,14 +37,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Fetch the original scheduled_timestamp for all jobs to be updated
-    // This is needed to correctly calculate the end_timestamp's date, especially for cross-day jobs
     const jobIdsToUpdate = importData.map((j) => j.id);
     const { data: jobsToUpdate, error: fetchError } = await supabase
       .from("daily_monitoring_log")
       .select("id, scheduled_timestamp")
       .in("id", jobIdsToUpdate)
-      .is("end_timestamp", null); // Only fetch jobs that can be updated
+      .is("end_timestamp", null); 
 
     if (fetchError) {
       console.error("Error fetching jobs to update:", fetchError);
@@ -57,20 +55,24 @@ export async function POST(request: Request) {
     const updatePromises = importData.map(({ id, endTime }) => {
       const jobData = jobsToUpdate.find((j) => j.id === id);
 
-      // If job is not found in our fetch (already has an end_timestamp or invalid id), skip it.
       if (!jobData) {
+        // Return dummy response if skipped
         return Promise.resolve({ data: null, error: null, count: 0 });
       }
 
       const scheduled = new Date(jobData.scheduled_timestamp);
+      
+      // PERBAIKAN: Jika detik tidak ada, pastikan tidak menjadi undefined
       const [hours, minutes, seconds] = endTime.split(":").map(Number);
+      const safeHours = hours || 0;
+      const safeMinutes = minutes || 0;
+      const safeSeconds = seconds || 0;
 
-      // Create a new Date object for the end time, starting with the scheduled date's components
       const end = new Date(scheduled);
-      // Set the time from the payload. Using setUTCHours for ISO string consistency.
-      end.setUTCHours(hours, minutes, seconds, 0);
+      
+      // Gunakan nilai yang sudah aman (safe)
+      end.setUTCHours(safeHours, safeMinutes, safeSeconds, 0);
 
-      // If the calculated end time is earlier than the scheduled time, it must have finished on the next day.
       if (end < scheduled) {
         end.setUTCDate(end.getUTCDate() + 1);
       }
@@ -85,7 +87,8 @@ export async function POST(request: Request) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", id)
-        .is("end_timestamp", null); // Double safety check
+        .is("end_timestamp", null)
+        .select(); // Tambahkan .select() agar hasil update bisa terbaca count-nya
     });
 
     try {
@@ -95,7 +98,7 @@ export async function POST(request: Request) {
       results.forEach((res) => {
         if (res.error) {
           console.warn(`Failed to update critical job`, res.error);
-        } else if (res.count && res.count > 0) {
+        } else if (res.data && res.data.length > 0) { // Perbaikan pengecekan keberhasilan
           successfulUpdates++;
         }
       });
