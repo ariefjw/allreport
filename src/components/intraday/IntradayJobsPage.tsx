@@ -267,20 +267,9 @@ function BatchCard({
   isActive: boolean;
   onFinishedTimeChange: (id: string, time: string | null) => Promise<void>;
 }) {
-  if (!batch) return null;
-
-  const startedDisplay = batch.startedTime ? String(batch.startedTime).substring(0, 5) : "--:--";
-
-  let finishedDisplay = "";
-  if (batch.finishedTimestamp) {
-    const d = new Date(batch.finishedTimestamp);
-    // Hitung GMT+7 secara matematis agar formatnya bersih 100% "HH:mm" tanpa spasi tersembunyi
-    const gmt7Date = new Date(d.getTime() + 7 * 3600000);
-    const hh = String(gmt7Date.getUTCHours()).padStart(2, "0");
-    const mm = String(gmt7Date.getUTCMinutes()).padStart(2, "0");
-    const ss = String(gmt7Date.getUTCSeconds()).padStart(2, "0");
-    finishedDisplay = `${hh}:${mm}`;
-  }
+  const startedDisplay = formatTimeHM(
+    new Date(`1970-01-01T${batch.startedTime}`),
+  );
 
   return (
     <div
@@ -320,7 +309,7 @@ function BatchCard({
           {isActive && (
             <div className="w-28">
               <TimeInput
-                value={finishedDisplay}
+                value={batch.finishedTimestamp}
                 onChange={(time) => onFinishedTimeChange(batch.id, time)}
                 label="Finished"
               />
@@ -335,4 +324,4 @@ function BatchCard({
       </div>
     </div>
   );
-}
+      }
