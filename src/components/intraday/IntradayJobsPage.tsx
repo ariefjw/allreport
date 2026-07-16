@@ -267,21 +267,18 @@ function BatchCard({
   isActive: boolean;
   onFinishedTimeChange: (id: string, time: string | null) => Promise<void>;
 }) {
-  // Perlindungan (Safe Check): Jika startedTime null, tidak akan crash
-  const startedDisplay = batch.startedTime ? batch.startedTime.substring(0, 5) : "";
+  if (!batch) return null;
 
-  // Ambil waktu selesai dan paksakan ke GMT+7 (WIB) tanpa error
+  const startedDisplay = batch.startedTime ? String(batch.startedTime).substring(0, 5) : "--:--";
+
   let finishedDisplay = "";
   if (batch.finishedTimestamp) {
-    const dateObj = new Date(batch.finishedTimestamp);
-    if (!isNaN(dateObj.getTime())) { // Pastikan datanya valid
-      finishedDisplay = new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Asia/Jakarta",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }).format(dateObj);
-    }
+    const d = new Date(batch.finishedTimestamp);
+    // Hitung GMT+7 secara matematis agar formatnya bersih 100% "HH:mm" tanpa spasi tersembunyi
+    const gmt7Date = new Date(d.getTime() + 7 * 3600000);
+    const hh = String(gmt7Date.getUTCHours()).padStart(2, "0");
+    const mm = String(gmt7Date.getUTCMinutes()).padStart(2, "0");
+    finishedDisplay = `${hh}:${mm}`;
   }
 
   return (
