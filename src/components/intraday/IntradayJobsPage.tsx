@@ -267,9 +267,11 @@ function BatchCard({
   isActive: boolean;
   onFinishedTimeChange: (id: string, time: string | null) => Promise<void>;
 }) {
-  const startedDisplay = formatTimeHM(
-    new Date(`1970-01-01T${batch.startedTime}`),
-  );
+  const startedDisplay = batch.startedTime.substring(0, 5);
+
+  const finishedDisplay = batch.finishedTimestamp
+    ? formatTimeHM(new Date(batch.finishedTimestamp))
+    : "";
 
   return (
     <div
@@ -309,7 +311,7 @@ function BatchCard({
           {isActive && (
             <div className="w-28">
               <TimeInput
-                value={batch.finishedTimestamp}
+                value={finishedDisplay}
                 onChange={(time) => onFinishedTimeChange(batch.id, time)}
                 label="Finished"
               />
