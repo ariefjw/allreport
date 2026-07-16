@@ -57,27 +57,36 @@ function parseIntradayReport(
 }
 
 // =========================================================================
-// HELPER FIX: Memperbaiki format "+00" dari Supabase agar bisa dibaca JS
-// lalu menggeser jamnya menjadi +7 WIB dan menyimpannya sebagai format baku
+// KUNCI JAWABAN 2: Pemaksa WIB Anti-Gagal
 // =========================================================================
-function getSafeShiftedTime(timestamp: string | null): string | null {
-  if (!timestamp) return null;
+function shiftToWIB(timeStr: string | null): string | null {
+  if (!timeStr) return null;
   try {
-    // KUNCI JAWABAN: Ubah "2026-07-16 01:44:00+00" menjadi "2026-07-16T01:44:00Z"
-    let cleanStr = timestamp.replace(" ", "T");
-    if (cleanStr.includes("+00") && !cleanStr.includes("+00:00")) {
-      cleanStr = cleanStr.replace("+00", "Z");
+    let isoStr = timeStr;
+    // Jika format dari DB HANYA jam (contoh: "01:44:00+00"), 
+    // kita wajib pasang tanggal palsu agar JS tidak menganggapnya Invalid Date.
+    if (!isoStr.includes("T") && !isoStr.includes(" ")) {
+      isoStr = `1970-01-01T${isoStr}`;
+    } else {
+      isoStr = isoStr.replace(" ", "T");
     }
     
-    const d = new Date(cleanStr);
-    if (isNaN(d.getTime())) return timestamp; // Jika tetap gagal, kembalikan aslinya
+    // Standarisasi zona UTC
+    isoStr = isoStr.replace(/\+00(:00)?$/, "Z");
     
-    // Tambah 7 jam (WIB)
-    const shifted = new Date(d.getTime() + 7 * 3600000);
-    // Kembalikan ke format ISO utuh yang disukai oleh TimeInput
-    return shifted.toISOString();
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return timeStr; // Fallback jika masih gagal
+    
+    // Paksakan jamnya ke GMT+7 (WIB)
+    const wibDate = new Date(d.getTime() + 7 * 3600000);
+    const hh = String(wibDate.getUTCHours()).padStart(2, "0");
+    const mm = String(wibDate.getUTCMinutes()).padStart(2, "0");
+    const ss = String(wibDate.getUTCSeconds()).padStart(2, "0");
+    
+    // Kembalikan ke format baku HH:mm:ss
+    return `${hh}:${mm}:${ss}`;
   } catch {
-    return timestamp;
+    return timeStr;
   }
 }
 
@@ -93,30 +102,12 @@ export function IntradayJobsPage() {
   const completedCount = batches.filter((b) => b.finishedTimestamp).length;
   const now = new Date();
 
-  // FUNGSI INTERCEPTOR: Menyiapkan data khusus untuk Copy Report.
+  // Siapkan data untuk fungsi copy Report
   const getReportReadyBatches = () => {
-    return batches.map(b => {
-      if (!b.finishedTimestamp) return b;
-      
-      try {
-        let cleanStr = b.finishedTimestamp.replace(" ", "T");
-        if (cleanStr.includes("+00") && !cleanStr.includes("+00:00")) {
-          cleanStr = cleanStr.replace("+00", "Z");
-        }
-        
-        const d = new Date(cleanStr);
-        if (isNaN(d.getTime())) return b;
-
-        const shifted = new Date(d.getTime() + 7 * 3600000);
-        const hh = String(shifted.getUTCHours()).padStart(2, '0');
-        const mm = String(shifted.getUTCMinutes()).padStart(2, '0');
-        const ss = String(shifted.getUTCSeconds()).padStart(2, '0');
-        
-        return { ...b, finishedTimestamp: `${hh}:${mm}:${ss}` };
-      } catch {
-        return b;
-      }
-    });
+    return batches.map(b => ({
+      ...b,
+      finishedTimestamp: shiftToWIB(b.finishedTimestamp)
+    }));
   };
 
   const handleImport = async () => {
@@ -194,6 +185,7 @@ export function IntradayJobsPage() {
         }
       />
 
+      {/* MODAL IMPORT */}
       {isImportModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="m-4 w-full max-w-lg rounded-lg bg-white p-6 shadow-xl dark:bg-slate-900">
@@ -227,14 +219,14 @@ export function IntradayJobsPage() {
               <button
                 onClick={() => setIsImportModalOpen(false)}
                 disabled={isImporting}
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300 border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-800 dark:hover:text-slate-50 h-10 px-4 py-2"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium border border-slate-200 bg-white hover:bg-slate-100 h-10 px-4 py-2"
               >
                 Cancel
               </button>
               <button
                 onClick={handleImport}
                 disabled={isImporting || !importText}
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300 bg-slate-900 text-slate-50 hover:bg-slate-900/90 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-50/90 h-10 px-4 py-2"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium bg-slate-900 text-slate-50 hover:bg-slate-900/90 h-10 px-4 py-2"
               >
                 {isImporting ? "Importing..." : "Import & Update"}
               </button>
@@ -243,6 +235,7 @@ export function IntradayJobsPage() {
         </div>
       )}
 
+      {/* TABEL BATCHES */}
       <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
         {loading && (
           <p className="py-8 text-center text-sm text-slate-500">
@@ -304,8 +297,8 @@ function BatchCard({
 }) {
   const startedDisplay = batch.startedTime.substring(0, 5);
 
-  // Nilai ini dijamin berhasil dibaca dan ditambah 7 jam
-  const safeFinishedTimestamp = getSafeShiftedTime(batch.finishedTimestamp);
+  // SEKARANG DIJAMIN MENGANDUNG WIB "08:44:00"
+  const safeFinishedTimestamp = shiftToWIB(batch.finishedTimestamp);
 
   return (
     <div
@@ -347,7 +340,6 @@ function BatchCard({
               <TimeInput
                 value={safeFinishedTimestamp}
                 onChange={(time) => {
-                  // Mencegah error build Vercel jika 'time' kosong (null)
                   if (!time) {
                     onFinishedTimeChange(batch.id, null);
                     return;
