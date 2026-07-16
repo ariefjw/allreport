@@ -19,43 +19,52 @@ export function CriticalJobsPage() {
   const runningCount = jobs.filter((j) => j.status === "*RUNNING*").length;
   const failedCount = jobs.filter((j) => j.status === "*FAILED*").length;
 
-    const handleImport = async (text: string) => {
-    const lines = text.split('\n');
-    const importData: { id: string; endTime: string }[] = [];
+  const handleImport = async (text: string) => {
+  const lines = text.split('\n');
+  const importData: { id: string; endTime: string }[] = [];
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       
-      // Cari baris yang mengandung nama job (mengabaikan nomor di depan seperti "40.")
-      const job = jobs.find(j => line.includes(j.jobName) || line.includes(j.jobName.split('_')[0]));
+      // 1. LOGIKA BARU: Jika ketemu WAITING, stop semua proses parsing ke bawah!
+      if (/WAITING/i.test(line)) {
+        break; 
+      }
+
+      // 2. Bersihkan nomor di depan nama job (contoh: "40. cbs_lll_to_landing" -> "cbs_lll_to_landing")
+      const cleanLineName = line.replace(/^\d+[\.\-]?\s*/, '').trim().toLowerCase();
+      
+      const job = jobs.find(j => 
+        line.includes(j.jobName) || 
+        cleanLineName === j.jobName.toLowerCase()
+      );
       
       if (job) {
-        // Cari waktu di baris ini atau baris berikutnya
-        // Pola: menangkap angka HH:mm di mana saja dalam baris
-        const timeMatch = (lines[i] + (lines[i+1] || "")).match(/(\d{2}:\d{2})/);
+        // Ambil baris saat ini dan baris di bawahnya untuk mencari jam
+        const searchArea = line + " " + (lines[i + 1] || "");
+        const match = searchArea.match(/(\d{2}:\d{2})/);
         
-        // PENTING: Jangan import jika baris mengandung kata status yang belum selesai
-        const isPending = /WAITING|RUNNING/i.test(lines[i] + (lines[i+1] || ""));
-        
-        if (timeMatch && !isPending) {
-          importData.push({ id: job.id, endTime: timeMatch[1] + ":00" });
+        // Hanya ambil jika ada jam DAN tidak ada tulisan RUNNING di sekitarnya
+        if (match && !/RUNNING/i.test(searchArea)) {
+          importData.push({ id: job.id, endTime: match[1] + ":00" });
         }
       }
     }
 
     if (importData.length === 0) {
-      alert("No valid completed times found. Pastikan tidak ada status WAITING/RUNNING.");
+      alert("Tidak ada data waktu (DONE) yang valid untuk di-import.");
       return;
     }
 
     try {
       await bulkImportEndTimes(importData);
-      alert(`Successfully imported ${importData.length} jobs.`);
+      alert(`Berhasil import ${importData.length} job selesai.`);
       setIsImportModalOpen(false);
     } catch (err) {
-      alert(`Import failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      alert(`Import gagal: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
   };
+
 
 
   return (
