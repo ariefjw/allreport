@@ -57,27 +57,25 @@ function parseIntradayReport(
 }
 
 // =========================================================================
-// HELPER: Trik manipulasi jam menggunakan Regex agar format asli utuh
+// HELPER FIX: Memperbaiki format "+00" dari Supabase agar bisa dibaca JS
+// lalu menggeser jamnya menjadi +7 WIB dan menyimpannya sebagai format baku
 // =========================================================================
-function shiftToWIB(timestamp: string | null): string {
-  if (!timestamp) return "";
-  
+function getSafeShiftedTime(timestamp: string | null): string | null {
+  if (!timestamp) return null;
   try {
-    // Ganti spasi dengan T hanya untuk proses perhitungan tanggal di JS
-    const parseableStr = timestamp.replace(" ", "T");
-    const d = new Date(parseableStr);
+    // KUNCI JAWABAN: Ubah "2026-07-16 01:44:00+00" menjadi "2026-07-16T01:44:00Z"
+    let cleanStr = timestamp.replace(" ", "T");
+    if (cleanStr.includes("+00") && !cleanStr.includes("+00:00")) {
+      cleanStr = cleanStr.replace("+00", "Z");
+    }
     
-    // Jika format aneh, kembalikan teks aslinya
-    if (isNaN(d.getTime())) return timestamp;
-
-    const wibDate = new Date(d.getTime() + 7 * 3600000);
-    const hh = String(wibDate.getUTCHours()).padStart(2, "0");
-    const mm = String(wibDate.getUTCMinutes()).padStart(2, "0");
-    const ss = String(wibDate.getUTCSeconds()).padStart(2, "0");
+    const d = new Date(cleanStr);
+    if (isNaN(d.getTime())) return timestamp; // Jika tetap gagal, kembalikan aslinya
     
-    // KUNCI: Cari format jam (misal 01:44:00) di string asli (2026-07-16 01:44:00+00) 
-    // lalu timpa dengan jam WIB (08:44:00). Struktur sisanya akan 100% utuh!
-    return timestamp.replace(/\d{2}:\d{2}:\d{2}/, `${hh}:${mm}:${ss}`);
+    // Tambah 7 jam (WIB)
+    const shifted = new Date(d.getTime() + 7 * 3600000);
+    // Kembalikan ke format ISO utuh yang disukai oleh TimeInput
+    return shifted.toISOString();
   } catch {
     return timestamp;
   }
@@ -95,14 +93,18 @@ export function IntradayJobsPage() {
   const completedCount = batches.filter((b) => b.finishedTimestamp).length;
   const now = new Date();
 
-  // FUNGSI INTERCEPTOR: Menyiapkan data murni HH:mm:ss untuk Copy Report.
+  // FUNGSI INTERCEPTOR: Menyiapkan data khusus untuk Copy Report.
   const getReportReadyBatches = () => {
     return batches.map(b => {
       if (!b.finishedTimestamp) return b;
       
       try {
-        const parseableStr = b.finishedTimestamp.replace(" ", "T");
-        const d = new Date(parseableStr);
+        let cleanStr = b.finishedTimestamp.replace(" ", "T");
+        if (cleanStr.includes("+00") && !cleanStr.includes("+00:00")) {
+          cleanStr = cleanStr.replace("+00", "Z");
+        }
+        
+        const d = new Date(cleanStr);
         if (isNaN(d.getTime())) return b;
 
         const shifted = new Date(d.getTime() + 7 * 3600000);
@@ -302,8 +304,8 @@ function BatchCard({
 }) {
   const startedDisplay = batch.startedTime.substring(0, 5);
 
-  // Nilai ini sekarang 100% aman dan angkanya sudah menjadi WIB
-  const safeFinishedTimestamp = shiftToWIB(batch.finishedTimestamp);
+  // Nilai ini dijamin berhasil dibaca dan ditambah 7 jam
+  const safeFinishedTimestamp = getSafeShiftedTime(batch.finishedTimestamp);
 
   return (
     <div
@@ -345,7 +347,7 @@ function BatchCard({
               <TimeInput
                 value={safeFinishedTimestamp}
                 onChange={(time) => {
-                  // Pelindung agar Vercel tidak error saat time bernilai null
+                  // Mencegah error build Vercel jika 'time' kosong (null)
                   if (!time) {
                     onFinishedTimeChange(batch.id, null);
                     return;
