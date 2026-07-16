@@ -11,7 +11,7 @@ import {
   generateIntradayReportText,
   generateIntradayFinishedTimeText,
 } from "@/lib/report-generators/intraday";
-import { formatTimeHM, getTodayDisplay, isTimeReached } from "@/lib/utils";
+import { getTodayDisplay, isTimeReached } from "@/lib/utils";
 import type { DailyIntradayLog } from "@/types";
 import { Upload } from "lucide-react";
 
@@ -56,6 +56,30 @@ function parseIntradayReport(
   return results;
 }
 
+// =========================================================================
+// HELPER: Trik manipulasi string ISO dari DB agar jamnya berubah +7 (WIB),
+// namun bentuk stringnya tetap utuh agar TimeInput tidak crash/kosong.
+// =========================================================================
+function shiftToWIB(timestamp: string | null): string {
+  if (!timestamp) return "";
+  if (!timestamp.includes("T")) return timestamp;
+  
+  try {
+    const d = new Date(timestamp);
+    const wibDate = new Date(d.getTime() + 7 * 3600000);
+    
+    const hh = String(wibDate.getUTCHours()).padStart(2, "0");
+    const mm = String(wibDate.getUTCMinutes()).padStart(2, "0");
+    const ss = String(wibDate.getUTCSeconds()).padStart(2, "0");
+    
+    // Ganti angka jam asli dengan jam WIB, biarkan karakter lainnya sama persis
+    const [datePart, timePart] = timestamp.split("T");
+    return `${datePart}T${hh}:${mm}:${ss}${timePart.substring(8)}`;
+  } catch {
+    return timestamp;
+  }
+}
+
 export function IntradayJobsPage() {
   const { batches, loading, error, updateFinishedTime, mutate } =
     useIntradayJobs() as UseIntradayJobsResult;
@@ -68,19 +92,18 @@ export function IntradayJobsPage() {
   const completedCount = batches.filter((b) => b.finishedTimestamp).length;
   const now = new Date();
 
-  // FUNGSI INTERCEPTOR: Membersihkan data ISO dari DB sebelum di-copy ke Report
-  // Ini mencegah fungsi split(":") di report generator mengambil angka tahun (2026)
+  // FUNGSI INTERCEPTOR: Menyiapkan data khusus untuk Copy Report.
+  // Memastikan format akhirnya murni "HH:mm" agar fungsi bawaan tidak salah potong.
   const getReportReadyBatches = () => {
     return batches.map(b => {
       if (!b.finishedTimestamp || !b.finishedTimestamp.includes("T")) return b;
       
       const d = new Date(b.finishedTimestamp);
-      const shifted = new Date(d.getTime() + 7 * 3600000); // Geser mutlak +7 jam
+      const shifted = new Date(d.getTime() + 7 * 3600000);
       const hh = String(shifted.getUTCHours()).padStart(2, '0');
       const mm = String(shifted.getUTCMinutes()).padStart(2, '0');
       const ss = String(shifted.getUTCSeconds()).padStart(2, '0');
       
-      // Ubah data dari format ISO yang panjang menjadi "HH:mm:ss" yang bersih
       return { ...b, finishedTimestamp: `${hh}:${mm}:${ss}` };
     });
   };
@@ -148,14 +171,12 @@ export function IntradayJobsPage() {
             <CopyButton
               label="Copy Intraday Report"
               onCopy={async () => {
-                // Gunakan data yang sudah dibersihkan
                 return generateIntradayReportText(getReportReadyBatches());
               }}
             />
             <CopyButton
               label="Copy Finished Time"
               variant="secondary"
-              // Gunakan data yang sudah dibersihkan
               onCopy={async () => generateIntradayFinishedTimeText(getReportReadyBatches())}
             />
           </>
@@ -272,17 +293,8 @@ function BatchCard({
 }) {
   const startedDisplay = batch.startedTime.substring(0, 5);
 
-  let finishedDisplay = "";
-  if (batch.finishedTimestamp) {
-    const d = new Date(batch.finishedTimestamp);
-    // Tambah 7 jam untuk WIB
-    const wibDate = new Date(d.getTime() + 7 * 3600000);
-    const hh = String(wibDate.getUTCHours()).padStart(2, "0");
-    const mm = String(wibDate.getUTCMinutes()).padStart(2, "0");
-    const ss = String(wibDate.getUTCSeconds()).padStart(2, "0");
-    finishedDisplay = `${hh}${mm}${ss}`;
-  }
-  
+  // Gunakan data ISO yang jamnya sudah dipalsukan menjadi WIB
+  const safeFinishedTimestamp = shiftToWIB(batch.finishedTimestamp);
 
   return (
     <div
@@ -322,23 +334,17 @@ function BatchCard({
           {isActive && (
             <div className="w-28">
               <TimeInput
-  value={finishedDisplay}
-  onChange={(time) => {
-    // TAMBAHKAN PENGECEKAN INI:
-    if (!time) {
-      onFinishedTimeChange(batch.id, null);
-      return;
-    }
-
-    // Sekarang TypeScript tahu 'time' adalah string karena pengecekan di atas
-    const formatted = time.length === 6 
-      ? `${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}` 
-      : time;
-      
-    onFinishedTimeChange(batch.id, formatted);
-  }}
-  label="Finished"
-/>
+                value={safeFinishedTimestamp}
+                onChange={(time) => {
+                  // PERLINDUNGAN VERCEL: Cegah error "time is possibly null"
+                  if (!time) {
+                    onFinishedTimeChange(batch.id, null);
+                    return;
+                  }
+                  onFinishedTimeChange(batch.id, time);
+                }}
+                label="Finished"
+              />
             </div>
           )}
           {batch.finishedTimestamp && (
