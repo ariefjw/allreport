@@ -20,12 +20,12 @@ interface UseIntradayJobsResult {
   loading: boolean;
   error: string | null;
   updateFinishedTime: (id: string, time: string | null) => Promise<void>;
-  mutate?: () => Promise<DailyIntradayLog[] | undefined>; // from SWR/React Query
+  mutate?: () => Promise<DailyIntradayLog[] | undefined>;
 }
 
 type ImportPayload = {
   id: string;
-  finishedTime: string; // "HH:mm"
+  finishedTime: string;
 }[];
 
 function parseIntradayReport(
@@ -36,17 +36,15 @@ function parseIntradayReport(
   const results: ImportPayload = [];
   const batchMap = new Map(batches.map((b) => [b.batchNumber, b]));
 
-  // Regex to find "- batch X: ... finished HH:MM"
   const lineRegex = /-\s*batch\s*(\d+):.*finished\s*(\d{2}:\d{2})/;
 
   for (const line of lines) {
     const match = line.trim().match(lineRegex);
     if (match) {
       const batchNumber = parseInt(match[1], 10);
-      const finishedTime = match[2]; // "HH:mm"
+      const finishedTime = match[2];
 
       const batchData = batchMap.get(batchNumber);
-      // IMPORTANT: only add if the batch exists and doesn't have a finished time yet in the current state
       if (batchData && !batchData.finishedTimestamp) {
         results.push({
           id: batchData.id,
@@ -59,8 +57,6 @@ function parseIntradayReport(
 }
 
 export function IntradayJobsPage() {
-  // NOTE: The `useIntradayJobs` hook should expose a `mutate` function (from SWR/React Query)
-  // to allow for programmatic re-fetching of data.
   const { batches, loading, error, updateFinishedTime, mutate } =
     useIntradayJobs() as UseIntradayJobsResult;
 
@@ -71,6 +67,23 @@ export function IntradayJobsPage() {
 
   const completedCount = batches.filter((b) => b.finishedTimestamp).length;
   const now = new Date();
+
+  // FUNGSI INTERCEPTOR: Membersihkan data ISO dari DB sebelum di-copy ke Report
+  // Ini mencegah fungsi split(":") di report generator mengambil angka tahun (2026)
+  const getReportReadyBatches = () => {
+    return batches.map(b => {
+      if (!b.finishedTimestamp || !b.finishedTimestamp.includes("T")) return b;
+      
+      const d = new Date(b.finishedTimestamp);
+      const shifted = new Date(d.getTime() + 7 * 3600000); // Geser mutlak +7 jam
+      const hh = String(shifted.getUTCHours()).padStart(2, '0');
+      const mm = String(shifted.getUTCMinutes()).padStart(2, '0');
+      const ss = String(shifted.getUTCSeconds()).padStart(2, '0');
+      
+      // Ubah data dari format ISO yang panjang menjadi "HH:mm:ss" yang bersih
+      return { ...b, finishedTimestamp: `${hh}:${mm}:${ss}` };
+    });
+  };
 
   const handleImport = async () => {
     setIsImporting(true);
@@ -98,15 +111,12 @@ export function IntradayJobsPage() {
         throw new Error(result.error || "Failed to import data.");
       }
 
-      // Success
       setIsImportModalOpen(false);
       setImportText("");
 
-      // Re-fetch data to show updates
       if (mutate) {
         mutate();
       } else {
-        // Fallback if mutate is not available
         window.location.reload();
       }
     } catch (e: unknown) {
@@ -138,22 +148,15 @@ export function IntradayJobsPage() {
             <CopyButton
               label="Copy Intraday Report"
               onCopy={async () => {
-                console.log(
-                  "[DEBUG] batches at copy time:",
-                  JSON.stringify(
-                    batches.map((b) => ({
-                      batch: b.batchNumber,
-                      finished: b.finishedTimestamp,
-                    })),
-                  ),
-                );
-                return generateIntradayReportText(batches);
+                // Gunakan data yang sudah dibersihkan
+                return generateIntradayReportText(getReportReadyBatches());
               }}
             />
             <CopyButton
               label="Copy Finished Time"
               variant="secondary"
-              onCopy={async () => generateIntradayFinishedTimeText(batches)}
+              // Gunakan data yang sudah dibersihkan
+              onCopy={async () => generateIntradayFinishedTimeText(getReportReadyBatches())}
             />
           </>
         }
@@ -271,6 +274,16 @@ function BatchCard({
     new Date(`1970-01-01T${batch.startedTime}`),
   );
 
+  // KUNCI PERBAIKAN TimeInput:
+  // Kita buatkan string ISO persis seperti yang TimeInput harapkan, 
+  // tetapi jamnya sudah kita "bohongi" dengan menambahkan 7 jam (WIB).
+  let safeFinishedTimestamp = batch.finishedTimestamp;
+  if (safeFinishedTimestamp && safeFinishedTimestamp.includes("T")) {
+    const d = new Date(safeFinishedTimestamp);
+    const shifted = new Date(d.getTime() + 7 * 3600000);
+    safeFinishedTimestamp = shifted.toISOString();
+  }
+
   return (
     <div
       className={`rounded-xl border bg-white p-4 shadow-sm dark:bg-slate-900 ${
@@ -309,7 +322,8 @@ function BatchCard({
           {isActive && (
             <div className="w-28">
               <TimeInput
-                value={batch.finishedTimestamp}
+                // Gunakan nilai yang sudah disesuaikan, TimeInput tidak akan crash/kosong
+                value={safeFinishedTimestamp}
                 onChange={(time) => onFinishedTimeChange(batch.id, time)}
                 label="Finished"
               />
@@ -324,4 +338,4 @@ function BatchCard({
       </div>
     </div>
   );
-      }
+}
