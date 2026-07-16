@@ -19,28 +19,32 @@ export function CriticalJobsPage() {
   const runningCount = jobs.filter((j) => j.status === "*RUNNING*").length;
   const failedCount = jobs.filter((j) => j.status === "*FAILED*").length;
 
-  const handleImport = async (text: string) => {
+    const handleImport = async (text: string) => {
     const lines = text.split('\n');
     const importData: { id: string; endTime: string }[] = [];
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      if (!line || line.includes("WAITING")) continue; // Abaikan baris WAITING saja
-
-      const job = jobs.find(j => line.includes(j.jobName));
+      
+      // Cari baris yang mengandung nama job (mengabaikan nomor di depan seperti "40.")
+      const job = jobs.find(j => line.includes(j.jobName) || line.includes(j.jobName.split('_')[0]));
+      
       if (job) {
-        const nextLine = lines[i + 1]?.trim();
-        if (nextLine) {
-          const match = nextLine.match(/(\d{2}:\d{2})/);
-          if (match) {
-            importData.push({ id: job.id, endTime: match[1] + ":00" });
-          }
+        // Cari waktu di baris ini atau baris berikutnya
+        // Pola: menangkap angka HH:mm di mana saja dalam baris
+        const timeMatch = (lines[i] + (lines[i+1] || "")).match(/(\d{2}:\d{2})/);
+        
+        // PENTING: Jangan import jika baris mengandung kata status yang belum selesai
+        const isPending = /WAITING|RUNNING/i.test(lines[i] + (lines[i+1] || ""));
+        
+        if (timeMatch && !isPending) {
+          importData.push({ id: job.id, endTime: timeMatch[1] + ":00" });
         }
       }
     }
 
     if (importData.length === 0) {
-      alert("No valid times found for import.");
+      alert("No valid completed times found. Pastikan tidak ada status WAITING/RUNNING.");
       return;
     }
 
@@ -52,6 +56,7 @@ export function CriticalJobsPage() {
       alert(`Import failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
   };
+
 
   return (
     <>
