@@ -270,18 +270,17 @@ function BatchCard({
   isActive: boolean;
   onFinishedTimeChange: (id: string, time: string | null) => Promise<void>;
 }) {
-  const startedDisplay = formatTimeHM(
-    new Date(`1970-01-01T${batch.startedTime}`),
-  );
+  const startedDisplay = batch.startedTime.substring(0, 5);
 
-  // KUNCI PERBAIKAN TimeInput:
-  // Kita buatkan string ISO persis seperti yang TimeInput harapkan, 
-  // tetapi jamnya sudah kita "bohongi" dengan menambahkan 7 jam (WIB).
-  let safeFinishedTimestamp = batch.finishedTimestamp;
-  if (safeFinishedTimestamp && safeFinishedTimestamp.includes("T")) {
-    const d = new Date(safeFinishedTimestamp);
-    const shifted = new Date(d.getTime() + 7 * 3600000);
-    safeFinishedTimestamp = shifted.toISOString();
+  let finishedDisplay = "";
+  if (batch.finishedTimestamp) {
+    const d = new Date(batch.finishedTimestamp);
+    // Tambah 7 jam untuk WIB
+    const wibDate = new Date(d.getTime() + 7 * 3600000);
+    const hh = String(wibDate.getUTCHours()).padStart(2, "0");
+    const mm = String(wibDate.getUTCMinutes()).padStart(2, "0");
+    const ss = String(wibDate.getUTCSeconds()).padStart(2, "0");
+    finishedDisplay = `${hh}:${mm}:${ss}`;
   }
 
   return (
@@ -321,12 +320,11 @@ function BatchCard({
           )}
           {isActive && (
             <div className="w-28">
-              <TimeInput
-                // Gunakan nilai yang sudah disesuaikan, TimeInput tidak akan crash/kosong
-                value={safeFinishedTimestamp}
-                onChange={(time) => onFinishedTimeChange(batch.id, time)}
-                label="Finished"
-              />
+            <TimeInput
+      value={finishedDisplay}
+      onChange={(time) => onFinishedTimeChange(batch.id, time)}
+      label="Finished"
+    />
             </div>
           )}
           {batch.finishedTimestamp && (
