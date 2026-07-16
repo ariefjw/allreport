@@ -7,8 +7,22 @@ function formatTimeFromString(time: string): string {
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 }
 
-export function generateIntradayReportText(batches: DailyIntradayLog[]): string {
+/**
+ * Helper untuk mendapatkan objek Date dengan nilai waktu lokal GMT+7 (Asia/Jakarta).
+ * Memastikan fungsi eksternal seperti formatDateReport dan isTimeReached 
+ * membaca tanggal dan jam yang benar meski server berada di UTC.
+ */
+function getNowGMT7(): Date {
   const now = new Date();
+  // Konversi waktu saat ini ke string berdasarkan zona waktu Jakarta
+  const gmt7String = now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
+  // Buat ulang objek Date dari string tersebut
+  return new Date(gmt7String);
+}
+
+export function generateIntradayReportText(batches: DailyIntradayLog[]): string {
+  // Gunakan Date yang sudah disesuaikan ke GMT+7
+  const now = getNowGMT7();
   const dateStr = formatDateReport(now);
 
   const visibleBatches = batches.filter((b) => isTimeReached(b.startedTime, now));
