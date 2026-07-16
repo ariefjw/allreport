@@ -23,16 +23,14 @@ export function CriticalJobsPage() {
     const lines = text.split('\n');
     const importData: { id: string; endTime: string }[] = [];
 
-    // Parser yang lebih pintar: mencari baris job dan waktu di baris berikutnya
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      if (!line || line.includes("WAITING") || line.includes("RUNNING")) continue;
+      if (!line || line.includes("WAITING")) continue; // Abaikan baris WAITING saja
 
       const job = jobs.find(j => line.includes(j.jobName));
       if (job) {
         const nextLine = lines[i + 1]?.trim();
         if (nextLine) {
-          // Cari pola HH:mm (mengabaikan teks status lainnya)
           const match = nextLine.match(/(\d{2}:\d{2})/);
           if (match) {
             importData.push({ id: job.id, endTime: match[1] + ":00" });
@@ -42,7 +40,7 @@ export function CriticalJobsPage() {
     }
 
     if (importData.length === 0) {
-      alert("No valid completed job times were found. WAITING/RUNNING jobs are ignored.");
+      alert("No valid times found for import.");
       return;
     }
 
@@ -63,15 +61,13 @@ export function CriticalJobsPage() {
         date={getTodayDisplay()}
         actions={
           <>
-            <CopyButton label="Copy Update Report" onCopy={async () => generateCriticalReportText(jobs)} />
-            <button onClick={() => setIsImportModalOpen(true)} className="ml-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-              Import Report
-            </button>
+            <CopyButton label="Copy Report" onCopy={async () => generateCriticalReportText(jobs)} />
+            <button onClick={() => setIsImportModalOpen(true)} className="ml-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white">Import Report</button>
           </>
         }
       />
 
-      <ImportModal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} onImport={handleImport} title="Import Critical Jobs Report" description="Paste report text. WAITING/RUNNING will be ignored." />
+      <ImportModal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} onImport={handleImport} title="Import Report" description="Paste report text." />
 
       <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
         <div className="mb-4 grid grid-cols-3 gap-3">
@@ -92,34 +88,30 @@ export function CriticalJobsPage() {
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <p className={`text-2xl font-bold ${color}`}>{value}</p>
-      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
     </div>
   );
 }
 
 function JobCard({ index, job, onEndTimeChange, onMarkFailed }: { index: number; job: DailyMonitoringLog; onEndTimeChange: (id: string, time: string | null) => Promise<void>; onMarkFailed: (id: string) => Promise<void>; }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-slate-900">{job.jobName}</p>
-          <p className="text-xs text-slate-500 mt-1">Scheduled: {formatTimeHM(new Date(job.scheduledTimestamp))}</p>
+          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{job.jobName}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Scheduled: {formatTimeHM(new Date(job.scheduledTimestamp))}</p>
         </div>
         <div className="flex items-center gap-3">
           <StatusBadge status={job.status} />
           {job.status === "*RUNNING*" && (
             <div className="w-28">
-              <TimeInput 
-                value={job.endTimestamp ? new Date(job.endTimestamp).toTimeString().slice(0, 8) : null} 
-                onChange={(t) => onEndTimeChange(job.id, t)} 
-                label="End Time" 
-              />
+              <TimeInput value={job.endTimestamp ? new Date(job.endTimestamp).toTimeString().slice(0, 8) : null} onChange={(t) => onEndTimeChange(job.id, t)} label="End Time" />
             </div>
           )}
           {job.status === "*RUNNING*" && (
-            <button onClick={() => onMarkFailed(job.id)} className="rounded-lg border px-3 py-2 text-xs text-red-700 hover:bg-red-50">Mark Failed</button>
+            <button onClick={() => onMarkFailed(job.id)} className="rounded-lg border px-3 py-2 text-xs text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400">Mark Failed</button>
           )}
         </div>
       </div>
