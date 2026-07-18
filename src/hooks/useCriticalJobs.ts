@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/providers/AuthProvider";
 import type { DailyMonitoringLog } from "@/types";
@@ -11,6 +11,9 @@ export function useCriticalJobs() {
   const [jobs, setJobs] = useState<DailyMonitoringLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 1. Deklarasikan Supabase di tingkat atas agar dikenali oleh semua fungsi di dalam hook ini
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchJobs = useCallback(async () => {
     const res = await fetch("/api/critical-jobs");
@@ -42,7 +45,7 @@ export function useCriticalJobs() {
   useEffect(() => {
     if (!isReady || !isAuthenticated) return;
 
-    const supabase = createClient();
+    // Supabase client sudah dibuat di atas, jadi kita langsung pakai variabel yang ada
     const operationalDate = getCriticalOperationalDate();
 
     const channel = supabase
@@ -67,7 +70,7 @@ export function useCriticalJobs() {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [isReady, isAuthenticated, refresh]);
+  }, [isReady, isAuthenticated, refresh, supabase]);
 
   const updateEndTime = useCallback(
     async (id: string, endTime: string | null) => {
@@ -107,11 +110,31 @@ export function useCriticalJobs() {
         throw new Error(body.error ?? "Failed to import jobs");
       }
       
-      // Refresh all data from server to ensure consistency
       await refresh();
     },
     [refresh]
   );
 
-  return { jobs, loading, error, updateEndTime, markFailed, refresh, bulkImportEndTimes };
+  // 2. Fungsi resetJob yang sudah dirapikan
+  const resetJob = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('daily_monitoring_log')
+        .update({ 
+           status: '*RUNNING*', 
+           end_timestamp: null 
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      // 3. Gunakan refresh() agar tampilan UI ikut berubah seketika
+      await refresh(); 
+    } catch (err) {
+      console.error("Gagal reset job:", err);
+    }
+  }, [supabase, refresh]);
+
+  // 4. Return sudah dibersihkan dari duplikasi
+  return { jobs, loading, error, updateEndTime, markFailed, refresh, bulkImportEndTimes, resetJob };
 }

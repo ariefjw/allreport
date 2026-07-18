@@ -117,14 +117,7 @@ export function IntradayJobsPage() {
         description={`${INTRADAY_JOB_NAME} — every 30 min (08:30–17:30)`}
         date={getTodayDisplay()}
         actions={
-          <>
-            <button
-              onClick={() => setIsImportModalOpen(true)}
-              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300 border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-800 dark:hover:text-slate-50 h-10 px-4 py-2"
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Import Report
-            </button>
+          <div className="flex items-center gap-3">
             <CopyButton
               label="Copy Intraday Report"
               onCopy={async () => generateIntradayReportText(getReportReadyBatches())}
@@ -134,7 +127,13 @@ export function IntradayJobsPage() {
               variant="secondary"
               onCopy={async () => generateIntradayFinishedTimeText(getReportReadyBatches())}
             />
-          </>
+            <button
+              onClick={() => setIsImportModalOpen(true)}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+            >
+              Import Report
+            </button>
+          </div>
         }
       />
 
