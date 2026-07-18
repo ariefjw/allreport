@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/providers/AuthProvider";
 import type { DailyErrorLog } from "@/types";
-import { getOperationalDate } from "@/lib/operational-date";
+import { getCriticalOperationalDate } from "@/lib/operational-date"; // Sesuaikan jika ada fungsi tanggal khusus
 
 export function useErrorLogs() {
   const { isReady, isAuthenticated } = useAuth();
@@ -12,13 +12,14 @@ export function useErrorLogs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 1. Inisialisasi Supabase
+  const supabase = useMemo(() => createClient(), []);
+
   const fetchLogs = useCallback(async () => {
+    // ... (Logika fetch API Anda saat ini, misal fetch("/api/error-logs"))
     const res = await fetch("/api/error-logs");
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error ?? "Failed to fetch error logs");
-    }
-    return res.json() as Promise<DailyErrorLog[]>;
+    if (!res.ok) throw new Error("Failed to fetch logs");
+    return res.json();
   }, []);
 
   const refresh = useCallback(async () => {
@@ -31,6 +32,7 @@ export function useErrorLogs() {
     }
   }, [fetchLogs]);
 
+  // 2. Initial Fetch
   useEffect(() => {
     if (!isReady || !isAuthenticated) {
       setLoading(false);
@@ -39,60 +41,66 @@ export function useErrorLogs() {
     refresh().finally(() => setLoading(false));
   }, [isReady, isAuthenticated, refresh]);
 
+  // 3. ✨ INI BAGIAN REAL-TIME NYA ✨
   useEffect(() => {
     if (!isReady || !isAuthenticated) return;
 
-    const supabase = createClient();
-    const operationalDate = getOperationalDate();
-
+    // Mendengarkan setiap ada data (snippet) baru yang masuk ke tabel
     const channel = supabase
-      .channel("error-logs-realtime")
+      .channel("error-snippets-realtime")
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT", // Hanya dengarkan saat ada snippet baru yang dibuat
           schema: "public",
-          table: "daily_error_log",
-          filter: `operational_date=eq.${operationalDate}`,
+          table: "daily_error_log", // GANTI dengan nama tabel error log Anda di Supabase!
         },
-        () => refresh()
+        (payload) => {
+          console.log("Snippet baru terdeteksi dari user lain!", payload);
+          refresh(); // Langsung perbarui layar secara otomatis
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isReady, isAuthenticated, refresh]);
+  }, [isReady, isAuthenticated, refresh, supabase]);
 
-  const createLog = useCallback(
-    async (input: {
-      errorTitle: string;
-      errorTextLog: string;
-      screenshotFile?: File | null;
-    }) => {
-      const formData = new FormData();
-      formData.append("errorTitle", input.errorTitle);
-      formData.append("errorTextLog", input.errorTextLog);
-      if (input.screenshotFile) {
-        formData.append("screenshot", input.screenshotFile);
-      }
+  const createLog = useCallback(async (data: { errorTitle: string; errorTextLog: string; screenshotFile: File | null }) => {
+  // 1. Buat FormData
+  const formData = new FormData();
+  formData.append("errorTitle", data.errorTitle);
+  formData.append("errorTextLog", data.errorTextLog);
+  
+  if (data.screenshotFile) {
+    formData.append("screenshot", data.screenshotFile);
+  }
 
-      const res = await fetch("/api/error-logs", {
-        method: "POST",
-        body: formData,
-      });
+  // 2. KIRIM SEBAGAI FORMDATA
+  const res = await fetch("/api/error-logs", {
+    method: "POST",
+    // PENTING: Hapus header Content-Type! 
+    // Browser akan mengisi 'multipart/form-data' secara otomatis dengan boundary yang unik.
+    body: formData,
+  });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Failed to save error log");
-      }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? "Failed to save log");
+  }
+  
+  await refresh();
+}, [refresh]);
 
-      const created = await res.json();
-      setLogs((prev) => [created, ...prev]);
-      return created as DailyErrorLog;
-    },
-    []
-  );
+  // Tambahkan di dalam useErrorLogs()
+const broadcastSnippet = useCallback((text: string) => {
+  supabase.channel('snippet-room').send({
+    type: 'broadcast',
+    event: 'snippet-update',
+    payload: { text },
+  });
+}, [supabase]);
 
-  return { logs, loading, error, createLog, refresh };
+  return { logs, loading, error, createLog, refresh, broadcastSnippet };
 }
