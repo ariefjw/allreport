@@ -51,9 +51,12 @@ export function CriticalJobsPage() {
         }
       />
 
-      {/* ... (ImportModal dan StatCard tetap sama) ... */}
-
-        <div className="space-y-2 mt-4">
+      <ImportModal 
+        isOpen={isImportModalOpen} 
+        onClose={() => setIsImportModalOpen(false)} 
+        onImport={handleImport} 
+      />
+      <div className="space-y-2 mt-4">
           {jobs.map((job, index) => (
             <JobCard 
               key={job.id} 
