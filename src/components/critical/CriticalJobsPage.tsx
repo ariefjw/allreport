@@ -12,7 +12,6 @@ import { formatTimeHM, getTodayDisplay } from "@/lib/utils";
 import type { DailyMonitoringLog } from "@/types";
 
 export function CriticalJobsPage() {
-  // Tambahkan resetJob di sini (pastikan nanti dibuat di hook-nya)
   const { jobs, loading, error, updateEndTime, markFailed, resetJob, bulkImportEndTimes } = useCriticalJobs();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
@@ -21,7 +20,13 @@ export function CriticalJobsPage() {
   const failedCount = jobs.filter((j) => j.status === "*FAILED*").length;
 
   const handleImport = async (text: string) => {
-    // ... (Kode import Anda yang sudah sempurna sebelumnya tidak perlu diubah)
+    try {
+      // Asumsikan kode parsing/import Anda sudah dihandle di sini atau di dalam hook
+      await bulkImportEndTimes(text as any); 
+      setIsImportModalOpen(false);
+    } catch (err) {
+      console.error("Gagal import:", err);
+    }
   };
 
   return (
@@ -51,28 +56,31 @@ export function CriticalJobsPage() {
         }
       />
 
+      {/* Tambahkan properti title dan description agar sesuai dengan tipe ImportModalProps */}
       <ImportModal 
         isOpen={isImportModalOpen} 
         onClose={() => setIsImportModalOpen(false)} 
-        onImport={handleImport} 
+        onImport={handleImport}
+        title="Import Job Report"
+        description="Paste teks report di sini untuk meng-update waktu secara massal."
       />
+
       <div className="space-y-2 mt-4">
-          {jobs.map((job, index) => (
-            <JobCard 
-              key={job.id} 
-              index={index} 
-              job={job} 
-              onEndTimeChange={updateEndTime} 
-              onMarkFailed={markFailed} 
-              onResetJob={resetJob} // Lempar fungsi reset ke Card
-            />
-          ))}
-        </div>
+        {jobs.map((job, index) => (
+          <JobCard 
+            key={job.id} 
+            index={index} 
+            job={job} 
+            onEndTimeChange={updateEndTime} 
+            onMarkFailed={markFailed} 
+            onResetJob={resetJob}
+          />
+        ))}
+      </div>
     </>
   );
 }
 
-// UPDATE KOMPONEN INI
 function JobCard({ 
   index, 
   job, 
@@ -91,7 +99,6 @@ function JobCard({
   const isDone = job.status === "*DONE*";
   const isFailed = job.status === "*FAILED*";
   
-  // Isu 1: Input waktu akan muncul jika status RUNNING atau DONE
   const canInputTime = isRunning || isDone;
 
   return (
@@ -124,7 +131,6 @@ function JobCard({
             </button>
           )}
 
-          {/* Isu 3: Mekanisme mengembalikan status FAILED ke RUNNING */}
           {isFailed && (
             <button onClick={() => onResetJob(job.id)} className="rounded-lg border border-amber-200 px-3 py-2 text-xs text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400">
               Reset Status
