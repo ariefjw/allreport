@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/providers/AuthProvider";
 import type { DailyErrorLog } from "@/types";
-import { getCriticalOperationalDate } from "@/lib/operational-date"; // Sesuaikan jika ada fungsi tanggal khusus
 
 export function useErrorLogs() {
   const { isReady, isAuthenticated } = useAuth();

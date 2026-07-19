@@ -69,7 +69,7 @@ export function ErrorLogsPage() {
     } finally {
       setSaving(false);
     }
-  }, [errorText, imageFile, createLog]);
+  }, [errorText, imageFile, createLog, handleTextChange]);
 
   return (
     <>

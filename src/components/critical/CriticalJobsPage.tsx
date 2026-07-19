@@ -18,11 +18,72 @@ export function CriticalJobsPage() {
 
   const handleImport = async (text: string) => {
     try {
-      // Menghindari penggunaan "as any" yang dilarang oleh Vercel Strict Mode
-      await bulkImportEndTimes(text as string); 
+      const payload: { id: string; endTime: string }[] = [];
+      const lines = text.split('\n');
+      
+      let currentMatchedJobId: string | null = null;
+
+      lines.forEach((line) => {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) return; // Lewati baris kosong
+
+        // 1. Deteksi baris yang berisi nama job (contoh: "1.cbs_tradefinance_to_landing")
+        // Regex ini mencari format angka, titik, lalu mengambil teks setelahnya
+        const jobNameMatch = trimmedLine.match(/^\d+\.\s*(.+)$/);
+        
+        if (jobNameMatch) {
+          const extractedJobName = jobNameMatch[1].toLowerCase().trim();
+          
+          // Cari job di state 'jobs' yang namanya cocok
+          const matchedJob = jobs.find((job) => 
+            extractedJobName.includes(job.jobName.toLowerCase()) || 
+            job.jobName.toLowerCase().includes(extractedJobName)
+          );
+          
+          if (matchedJob) {
+            currentMatchedJobId = matchedJob.id; // Simpan ID untuk baris berikutnya
+          } else {
+            currentMatchedJobId = null;
+          }
+        } 
+        // 2. Deteksi baris waktu di bawahnya (contoh: "22:30 - 22:40")
+        else if (currentMatchedJobId && trimmedLine.includes('-')) {
+          const timeParts = trimmedLine.split('-');
+          // Ambil teks SETELAH tanda strip (-)
+          const endTimeRaw = timeParts[1] ? timeParts[1].trim() : "";
+          
+          // Jika ada isinya, validasi apakah itu format jam HH:mm
+          if (endTimeRaw) {
+            const timeMatch = endTimeRaw.match(/^([0-1]?[0-9]|2[0-3])[:.]([0-5][0-9])/);
+            
+            if (timeMatch) {
+              let timeString = timeMatch[0].replace('.', ':');
+              if (timeString.length === 4) {
+                 timeString = `0${timeString}`; // Standardisasi misal "2:30" jadi "02:30"
+              }
+              
+              payload.push({
+                id: currentMatchedJobId,
+                endTime: timeString 
+              });
+            }
+          }
+          
+          // Reset ID setelah dicek agar tidak salah masuk ke job lain
+          currentMatchedJobId = null; 
+        }
+      });
+
+      if (payload.length === 0) {
+        alert("Tidak ada nama job DONE dengan format jam yang cocok terdeteksi.");
+        return;
+      }
+
+      await bulkImportEndTimes(payload); 
       setIsImportModalOpen(false);
     } catch (err) {
       console.error("Gagal import:", err);
+      alert(err instanceof Error ? err.message : "Gagal menyimpan import");
     }
   };
 
@@ -33,7 +94,7 @@ export function CriticalJobsPage() {
         description="Airflow batch job monitoring"
         date={getTodayDisplay()}
         actions={
-          <div className="flex items-center gap-3">
+          <div className="relative z-50 flex items-center gap-3">
             <CopyButton 
               label="Copy Report" 
               onCopy={async () => generateCriticalReportText(jobs)} 
@@ -53,7 +114,6 @@ export function CriticalJobsPage() {
         }
       />
 
-      {/* Menambahkan title dan description agar ImportModal tidak error TypeScript */}
       <ImportModal 
         isOpen={isImportModalOpen} 
         onClose={() => setIsImportModalOpen(false)} 

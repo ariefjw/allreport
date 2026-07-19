@@ -13,7 +13,6 @@ import {
 } from "@/lib/report-generators/intraday";
 import { getTodayDisplay, isTimeReached } from "@/lib/utils";
 import type { DailyIntradayLog } from "@/types";
-import { Upload } from "lucide-react";
 
 // =========================================================================
 // HELPER FIX TERAKHIR: Menggunakan Regex agar kebal dari error format DB
