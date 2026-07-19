@@ -12,17 +12,14 @@ import { formatTimeHM, getTodayDisplay } from "@/lib/utils";
 import type { DailyMonitoringLog } from "@/types";
 
 export function CriticalJobsPage() {
-  const { jobs, loading, error, updateEndTime, markFailed, resetJob, bulkImportEndTimes } = useCriticalJobs();
+  // Variabel loading, error, doneCount, dll dihapus agar tidak memicu error ESLint "never used"
+  const { jobs, updateEndTime, markFailed, resetJob, bulkImportEndTimes } = useCriticalJobs();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-
-  const doneCount = jobs.filter((j) => j.status === "*DONE*").length;
-  const runningCount = jobs.filter((j) => j.status === "*RUNNING*").length;
-  const failedCount = jobs.filter((j) => j.status === "*FAILED*").length;
 
   const handleImport = async (text: string) => {
     try {
-      // Asumsikan kode parsing/import Anda sudah dihandle di sini atau di dalam hook
-      await bulkImportEndTimes(text as any); 
+      // Menghindari penggunaan "as any" yang dilarang oleh Vercel Strict Mode
+      await bulkImportEndTimes(text as string); 
       setIsImportModalOpen(false);
     } catch (err) {
       console.error("Gagal import:", err);
@@ -56,13 +53,13 @@ export function CriticalJobsPage() {
         }
       />
 
-      {/* Tambahkan properti title dan description agar sesuai dengan tipe ImportModalProps */}
+      {/* Menambahkan title dan description agar ImportModal tidak error TypeScript */}
       <ImportModal 
         isOpen={isImportModalOpen} 
         onClose={() => setIsImportModalOpen(false)} 
         onImport={handleImport}
         title="Import Job Report"
-        description="Paste teks report di sini untuk meng-update waktu secara massal."
+        description="Paste teks laporan di sini untuk melakukan update."
       />
 
       <div className="space-y-2 mt-4">
