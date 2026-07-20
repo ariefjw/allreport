@@ -45,7 +45,6 @@ export function useCriticalJobs() {
   useEffect(() => {
     if (!isReady || !isAuthenticated) return;
 
-    // Supabase client sudah dibuat di atas, jadi kita langsung pakai variabel yang ada
     const operationalDate = getCriticalOperationalDate();
 
     const channel = supabase
@@ -64,11 +63,20 @@ export function useCriticalJobs() {
       )
       .subscribe();
 
-    const interval = setInterval(refresh, 30000);
+    const syncInterval = setInterval(async () => {
+      try {
+        await fetch("/api/critical-jobs/sync");
+        refresh();
+      } catch {
+      }
+    }, 60000);
+
+    const fallbackInterval = setInterval(refresh, 120000);
 
     return () => {
       supabase.removeChannel(channel);
-      clearInterval(interval);
+      clearInterval(syncInterval);
+      clearInterval(fallbackInterval);
     };
   }, [isReady, isAuthenticated, refresh, supabase]);
 
@@ -109,10 +117,25 @@ export function useCriticalJobs() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? "Failed to import jobs");
       }
-      
-      await refresh();
+
+      const result = await res.json();
+
+      if (result.updates?.length > 0) {
+        setJobs((prev) =>
+          prev.map((job) => {
+            const update = result.updates.find(
+              (u: { id: string; endTimestamp: string }) => u.id === job.id
+            );
+            return update
+              ? { ...job, status: "*DONE*", endTimestamp: update.endTimestamp }
+              : job;
+          })
+        );
+      }
+
+      return result;
     },
-    [refresh]
+    []
   );
 
   // 2. Fungsi resetJob yang sudah dirapikan

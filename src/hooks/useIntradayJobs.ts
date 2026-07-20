@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/providers/AuthProvider";
 import type { DailyIntradayLog } from "@/types";
@@ -11,6 +11,8 @@ export function useIntradayJobs() {
   const [batches, setBatches] = useState<DailyIntradayLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchBatches = useCallback(async () => {
     const res = await fetch("/api/intraday-jobs");
@@ -42,7 +44,6 @@ export function useIntradayJobs() {
   useEffect(() => {
     if (!isReady || !isAuthenticated) return;
 
-    const supabase = createClient();
     const operationalDate = getOperationalDate();
 
     const channel = supabase
@@ -59,10 +60,13 @@ export function useIntradayJobs() {
       )
       .subscribe();
 
+    const fallbackInterval = setInterval(refresh, 120000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(fallbackInterval);
     };
-  }, [isReady, isAuthenticated, refresh]);
+  }, [isReady, isAuthenticated, refresh, supabase]);
 
   const updateFinishedTime = useCallback(
     async (id: string, finishedTime: string | null) => {
@@ -86,5 +90,37 @@ export function useIntradayJobs() {
     []
   );
 
-  return { batches, loading, error, updateFinishedTime, refresh };
+  const bulkImportFinishedTimes = useCallback(
+    async (data: { id: string; finishedTime: string }[]) => {
+      const res = await fetch("/api/intraday-jobs/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error ?? "Failed to import batches");
+      }
+
+      if (result.updates?.length > 0) {
+        setBatches((prev) =>
+          prev.map((batch) => {
+            const update = result.updates.find(
+              (u: { id: string; finishedTimestamp: string }) => u.id === batch.id
+            );
+            return update
+              ? { ...batch, finishedTimestamp: update.finishedTimestamp }
+              : batch;
+          })
+        );
+      }
+
+      return result;
+    },
+    []
+  );
+
+  return { batches, loading, error, updateFinishedTime, bulkImportFinishedTimes, refresh };
 }

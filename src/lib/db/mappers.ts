@@ -12,7 +12,7 @@ import type {
 function formatTimeFromDb(time: string): string {
   if (time.includes("T")) {
     const d = new Date(time);
-    return d.toTimeString().slice(0, 8);
+    return d.toISOString().slice(11, 19);
   }
   return time.length === 5 ? `${time}:00` : time;
 }

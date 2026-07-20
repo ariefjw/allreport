@@ -17,8 +17,8 @@ export async function getErrorLogs(supabase: SupabaseClient) {
 export async function createErrorLog(
   supabase: SupabaseClient,
   input: {
-    errorTitle: string;
-    errorTextLog: string;
+    errorTitle?: string;
+    errorTextLog?: string;
     screenshotFile?: File | null;
   }
 ) {
@@ -48,8 +48,8 @@ export async function createErrorLog(
     .from("daily_error_log")
     .insert({
       operational_date: getOperationalDate(),
-      error_title: input.errorTitle,
-      error_text_log: input.errorTextLog,
+      error_title: input.errorTitle ?? "Screenshot",
+      error_text_log: input.errorTextLog ?? "",
       screenshot_url: screenshotUrl,
     })
     .select()
@@ -57,4 +57,30 @@ export async function createErrorLog(
 
   if (error) throw error;
   return data as DbDailyErrorLog;
+}
+
+export async function deleteErrorLog(
+  supabase: SupabaseClient,
+  id: string,
+  screenshotUrl: string | null
+) {
+  if (screenshotUrl) {
+    const segments = screenshotUrl.split("/");
+    const fileName = segments[segments.length - 1];
+    if (fileName) {
+      await supabase.storage
+        .from("error-screenshots")
+        .remove([fileName])
+        .then(({ error }) => {
+          if (error) console.warn("Storage delete issue:", error.message);
+        });
+    }
+  }
+
+  const { error } = await supabase
+    .from("daily_error_log")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
 }

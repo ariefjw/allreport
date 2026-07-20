@@ -66,15 +66,11 @@ export function useErrorLogs() {
     };
   }, [isReady, isAuthenticated, refresh, supabase]);
 
-  const createLog = useCallback(async (data: { errorTitle: string; errorTextLog: string; screenshotFile: File | null }) => {
-  // 1. Buat FormData
+  const createLog = useCallback(async (data: { errorTitle: string; errorTextLog?: string; screenshotFile?: File | null }) => {
   const formData = new FormData();
   formData.append("errorTitle", data.errorTitle);
-  formData.append("errorTextLog", data.errorTextLog);
-  
-  if (data.screenshotFile) {
-    formData.append("screenshot", data.screenshotFile);
-  }
+  if (data.errorTextLog) formData.append("errorTextLog", data.errorTextLog);
+  if (data.screenshotFile) formData.append("screenshot", data.screenshotFile);
 
   // 2. KIRIM SEBAGAI FORMDATA
   const res = await fetch("/api/error-logs", {
@@ -101,5 +97,21 @@ const broadcastSnippet = useCallback((text: string) => {
   });
 }, [supabase]);
 
-  return { logs, loading, error, createLog, refresh, broadcastSnippet };
+  const deleteLog = useCallback(async (id: string, screenshotUrl: string | null) => {
+    const params = new URLSearchParams({ id });
+    if (screenshotUrl) params.set("screenshotUrl", screenshotUrl);
+
+    const res = await fetch(`/api/error-logs?${params}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? "Failed to delete");
+    }
+    await refresh();
+  }, [refresh]);
+
+  const deleteMultipleLogs = useCallback(async (items: { id: string; screenshotUrl: string | null }[]) => {
+    await Promise.all(items.map((item) => deleteLog(item.id, item.screenshotUrl)));
+  }, [deleteLog]);
+
+  return { logs, loading, error, createLog, refresh, broadcastSnippet, deleteLog, deleteMultipleLogs };
 }

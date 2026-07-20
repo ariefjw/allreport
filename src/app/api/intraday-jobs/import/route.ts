@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, handleApiError } from "@/lib/api/auth";
-import { updateIntradayFinishedTime } from "@/lib/services/intraday-jobs";
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Pastikan user sudah login / terautentikasi
     const { supabase, response } = await requireAuth();
     if (response) return response;
 
-    // 2. Ambil data dari body request
     const body = await request.json();
 
-    // 3. Validasi apakah body adalah array
     if (!Array.isArray(body)) {
       return NextResponse.json(
         { error: "Invalid payload format. Expected an array." },
@@ -19,29 +15,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const updatedLogs = [];
-
-    // 4. Lakukan perulangan untuk mengupdate setiap batch yang dikirim
-    for (const item of body) {
-      if (item.id && item.finishedTime) {
-        // Kita gunakan fungsi update bawaan yang sudah pintar mengkonversi WIB ke UTC
-        const updatedRow = await updateIntradayFinishedTime(
-          supabase!,
-          item.id,
-          item.finishedTime
-        );
-        updatedLogs.push(updatedRow);
-      }
+    if (body.length === 0) {
+      return NextResponse.json(
+        { message: "No batches to import." },
+        { status: 200 }
+      );
     }
 
-    // 5. Kembalikan respons JSON yang valid agar frontend tidak error
+    const { data: rpcResult, error: rpcError } = await supabase!.rpc(
+      "bulk_import_intraday_jobs",
+      { payload: body }
+    );
+
+    if (rpcError) {
+      console.error("RPC error during bulk intraday import:", rpcError);
+      return NextResponse.json(
+        { error: `Bulk import failed: ${rpcError.message}` },
+        { status: 500 }
+      );
+    }
+
+    const updates = (rpcResult as { updated_id: string; updated_finished_timestamp: string }[] | null) ?? [];
+
     return NextResponse.json({
-      success: true,
-      message: `Successfully imported ${updatedLogs.length} batches.`,
-      data: updatedLogs,
+      message: `Import complete. Updated ${updates.length} of ${body.length} batches.`,
+      successfulUpdates: updates.length,
+      updates: updates.map((u) => ({
+        id: u.updated_id,
+        finishedTimestamp: u.updated_finished_timestamp,
+      })),
     });
   } catch (error) {
-    // Tangkap error jika terjadi masalah di database/server
     return handleApiError(error);
   }
 }

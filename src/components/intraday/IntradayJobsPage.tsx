@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useIntradayJobs } from "@/hooks/useIntradayJobs";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CopyButton } from "@/components/ui/CopyButton";
+import { StatusSummary } from "@/components/ui/StatusSummary";
+import { JobGroup } from "@/components/ui/JobGroup";
 import { TimeInput } from "@/components/ui/TimeInput";
 import { INTRADAY_JOB_NAME } from "@/lib/mock-data";
-import { INTRADAY_BATCH_TIMES } from "@/lib/intraday-schedule";
 import {
   generateIntradayReportText,
   generateIntradayFinishedTimeText,
@@ -14,12 +15,8 @@ import {
 import { getTodayDisplay, isTimeReached } from "@/lib/utils";
 import type { DailyIntradayLog } from "@/types";
 
-// =========================================================================
-// HELPER FIX TERAKHIR: Menggunakan Regex agar kebal dari error format DB
-// =========================================================================
 function shiftToWIB(timestamp: string | null): string | null {
   if (!timestamp) return null;
-  // Cari otomatis pola jam (HH:mm:ss) di dalam teks apapun
   const match = timestamp.match(/(\d{2}):(\d{2}):(\d{2})/);
   if (!match) return timestamp;
 
@@ -27,10 +24,15 @@ function shiftToWIB(timestamp: string | null): string | null {
   const m = match[2];
   const s = match[3];
 
-  // Tambahkan 7 jam langsung ke angkanya
   h = (h + 7) % 24;
 
   return `${String(h).padStart(2, "0")}:${m}:${s}`;
+}
+
+function getBatchStatus(batch: DailyIntradayLog, now: Date): string {
+  if (batch.finishedTimestamp) return "done";
+  if (isTimeReached(batch.startedTime, now)) return "active";
+  return "waiting";
 }
 
 type ImportPayload = {
@@ -58,15 +60,45 @@ function parseIntradayReport(text: string, batches: DailyIntradayLog[]): ImportP
   return results;
 }
 
+const STATUS_CFG: Record<string, { label: string; short: string; dot: string; text: string }> = {
+  active: { label: "Active", short: "RUN", dot: "bg-amber-400", text: "text-amber-600" },
+  done: { label: "Done", short: "DONE", dot: "bg-green-400", text: "text-green-600" },
+  waiting: { label: "Waiting", short: "WAIT", dot: "bg-slate-300", text: "text-slate-400" },
+};
+
 export function IntradayJobsPage() {
-  const { batches, loading, error, updateFinishedTime, refresh } = useIntradayJobs();
+  const { batches, loading, error, updateFinishedTime, bulkImportFinishedTimes } = useIntradayJobs();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
 
-  const completedCount = batches.filter((b) => b.finishedTimestamp).length;
-  const now = new Date();
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const grouped = useMemo(() => {
+    const groups: Record<string, DailyIntradayLog[]> = {
+      active: [],
+      done: [],
+      waiting: [],
+    };
+    batches.forEach((batch) => {
+      const status = getBatchStatus(batch, now);
+      groups[status]?.push(batch);
+    });
+    return groups;
+  }, [batches, now]);
+
+  const summary = {
+    waiting: grouped.waiting.length,
+    running: grouped.active.length,
+    done: grouped.done.length,
+    failed: 0,
+  };
 
   const getReportReadyBatches = () => {
     return batches.map((b) => ({
@@ -87,20 +119,9 @@ export function IntradayJobsPage() {
     }
 
     try {
-      const response = await fetch("/api/intraday-jobs/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to import data.");
-      }
-
+      await bulkImportFinishedTimes(payload);
       setIsImportModalOpen(false);
       setImportText("");
-      if (refresh) refresh();
     } catch (e: unknown) {
       if (e instanceof Error) setImportError(e.message);
       else setImportError("An unknown error occurred during import.");
@@ -109,6 +130,12 @@ export function IntradayJobsPage() {
     }
   };
 
+  const sections: { status: string; title: string; defaultExpanded: boolean }[] = [
+    { status: "active", title: "Active", defaultExpanded: true },
+    { status: "done", title: "Done", defaultExpanded: false },
+    { status: "waiting", title: "Waiting", defaultExpanded: false },
+  ];
+
   return (
     <>
       <PageHeader
@@ -116,7 +143,7 @@ export function IntradayJobsPage() {
         description={`${INTRADAY_JOB_NAME} — every 30 min (08:30–17:30)`}
         date={getTodayDisplay()}
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <CopyButton
               label="Copy Intraday Report"
               onCopy={async () => generateIntradayReportText(getReportReadyBatches())}
@@ -128,13 +155,41 @@ export function IntradayJobsPage() {
             />
             <button
               onClick={() => setIsImportModalOpen(true)}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+              className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
             >
-              Import Report
+              Import
             </button>
           </div>
         }
       />
+
+      <StatusSummary {...summary} />
+
+      <div className="mx-auto max-w-6xl">
+        {loading && <p className="py-8 text-center text-sm text-slate-500">Loading batches...</p>}
+        {error && <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
+
+        {!loading && !error && sections.map(({ status, title, defaultExpanded }) => {
+          const items = grouped[status];
+          if (!items?.length) return null;
+
+          return (
+            <JobGroup key={status} status={status} title={title} count={items.length} defaultExpanded={defaultExpanded}>
+              {items.map((batch) => (
+                <BatchRow
+                  key={batch.id}
+                  batch={batch}
+                  onFinishedTimeChange={updateFinishedTime}
+                />
+              ))}
+            </JobGroup>
+          );
+        })}
+
+        {!loading && !error && batches.length === 0 && (
+          <p className="py-12 text-center text-sm text-slate-400">No batches loaded.</p>
+        )}
+      </div>
 
       {isImportModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -176,114 +231,49 @@ export function IntradayJobsPage() {
           </div>
         </div>
       )}
-
-      <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
-        {loading && <p className="py-8 text-center text-sm text-slate-500">Loading batches...</p>}
-        {error && <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
-
-        {!loading && !error && (
-          <>
-            <div className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-slate-600 dark:text-slate-300">
-                  <span className="font-semibold text-green-600 dark:text-green-400">{completedCount}</span>
-                  {" / "}
-                  {batches.length} batches completed
-                </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500">
-                  {INTRADAY_BATCH_TIMES.length} batches · every 30 min · report shows batches whose start time has passed
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {batches.map((batch: DailyIntradayLog) => {
-                const isActive = isTimeReached(batch.startedTime, now);
-                return (
-                  <BatchCard
-                    key={batch.id}
-                    batch={batch}
-                    isActive={isActive}
-                    onFinishedTimeChange={updateFinishedTime}
-                  />
-                );
-              })}
-            </div>
-          </>
-        )}
-      </div>
     </>
   );
 }
 
-function BatchCard({
+function BatchRow({
   batch,
-  isActive,
   onFinishedTimeChange,
 }: {
   batch: DailyIntradayLog;
-  isActive: boolean;
   onFinishedTimeChange: (id: string, time: string | null) => Promise<void>;
 }) {
-  const startedDisplay = batch.startedTime.substring(0, 5);
-  // Panggil helper Regex kita yang sudah terbukti akurat untuk membaca data DB
+  const isDone = !!batch.finishedTimestamp;
+  const isActive = !isDone && isTimeReached(batch.startedTime, new Date());
+  const status = isDone ? "done" : isActive ? "active" : "waiting";
+  const cfg = STATUS_CFG[status];
   const safeFinishedTimestamp = shiftToWIB(batch.finishedTimestamp);
+  const startedDisplay = batch.startedTime.substring(0, 5);
 
   return (
-    <div
-      className={`rounded-xl border bg-white p-4 shadow-sm dark:bg-slate-900 ${
-        isActive
-          ? "border-slate-200 dark:border-slate-800"
-          : "border-slate-100 opacity-60 dark:border-slate-800/50"
-      }`}
-    >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <span
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold ${
-              batch.finishedTimestamp
-                ? "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400"
-                : isActive
-                  ? "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
-                  : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
-            }`}
-          >
-            {batch.batchNumber}
-          </span>
-          <div>
-            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-              Batch {batch.batchNumber}
-            </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Started: {startedDisplay}
-            </p>
-          </div>
+    <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2 text-sm dark:border-slate-800">
+      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-bold ${
+        isDone
+          ? "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400"
+          : isActive
+            ? "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
+            : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+      }`}>
+        {batch.batchNumber}
+      </span>
+      <span className="shrink-0 text-xs text-slate-400 w-10">{startedDisplay}</span>
+      <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${cfg.text}`}>
+        <span className={`h-2 w-2 rounded-full ${cfg.dot}`} />
+        <span className="hidden sm:inline">{cfg.short}</span>
+      </span>
+      <div className="flex-1" />
+      {(isActive || isDone) && (
+        <div className="w-20 shrink-0 sm:w-24">
+          <TimeInput
+            value={safeFinishedTimestamp}
+            onChange={(time) => onFinishedTimeChange(batch.id, time)}
+          />
         </div>
-
-        <div className="flex items-center gap-3 pl-11 sm:pl-0">
-          {!isActive && (
-            <span className="text-xs text-slate-400">Not yet started</span>
-          )}
-          {isActive && (
-            <div className="w-28">
-              <TimeInput
-                value={safeFinishedTimestamp}
-                onChange={(time) => {
-                  // Kirim data murni, backend sudah otomatis convert ke UTC!
-                  onFinishedTimeChange(batch.id, time);
-                }}
-                label="Finished"
-              />
-            </div>
-          )}
-          {batch.finishedTimestamp && (
-            <span className="rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-500/10 dark:text-green-400">
-              Done
-            </span>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
-
