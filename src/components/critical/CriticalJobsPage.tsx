@@ -2,22 +2,18 @@
 
 import { useState, useMemo } from "react";
 import { useCriticalJobs } from "@/hooks/useCriticalJobs";
+import { useReportReminder } from "@/hooks/useReportReminder";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { ImportModal } from "@/components/ui/ImportModal";
 import { StatusSummary } from "@/components/ui/StatusSummary";
 import { JobGroup } from "@/components/ui/JobGroup";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TimeInput } from "@/components/ui/TimeInput";
 import { generateCriticalReportText, generateCriticalDurationText } from "@/lib/report-generators/critical";
 import { formatTimeHM, getTodayDisplay } from "@/lib/utils";
+import { Upload, RotateCcw, XCircle } from "lucide-react";
 import type { DailyMonitoringLog } from "@/types";
-
-const STATUS_LABEL: Record<string, { short: string; dot: string; text: string }> = {
-  "*RUNNING*": { short: "RUN", dot: "bg-amber-400", text: "text-amber-600" },
-  "*DONE*": { short: "DONE", dot: "bg-green-400", text: "text-green-600" },
-  "*FAILED*": { short: "FAIL", dot: "bg-red-400", text: "text-red-600" },
-  "*WAITING*": { short: "WAIT", dot: "bg-slate-300", text: "text-slate-400" },
-};
 
 function useGroupedJobs(jobs: DailyMonitoringLog[]) {
   return useMemo(() => {
@@ -38,6 +34,8 @@ export function CriticalJobsPage() {
   const { jobs, updateEndTime, markFailed, resetJob, bulkImportEndTimes } = useCriticalJobs();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const grouped = useGroupedJobs(jobs);
+
+  useReportReminder(jobs);
 
   const summary = {
     waiting: grouped["*WAITING*"].length,
@@ -142,8 +140,9 @@ export function CriticalJobsPage() {
             />
             <button
               onClick={() => setIsImportModalOpen(true)}
-              className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+              className="btn-primary"
             >
+              <Upload className="h-4 w-4" strokeWidth={1.5} />
               Import
             </button>
           </div>
@@ -206,21 +205,19 @@ function JobRow({
   const isDone = job.status === "*DONE*";
   const isFailed = job.status === "*FAILED*";
   const canInputTime = isRunning || isDone;
-  const statusCfg = STATUS_LABEL[job.status];
 
   return (
-    <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2 text-sm dark:border-slate-800">
-      <span className="flex min-w-0 flex-1 items-center gap-2 truncate text-slate-800 dark:text-slate-200">
-        <span className="shrink-0 text-xs tabular-nums text-slate-400">{displayNumber}.</span>
+    <div className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
+      <span className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-xs font-medium tabular-nums text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+        {displayNumber}
+      </span>
+      <span className="min-w-0 truncate font-medium text-slate-800 dark:text-slate-200">
         {job.jobName}
       </span>
-      <span className="hidden shrink-0 text-xs text-slate-400 sm:block">
+      <span className="hidden text-xs text-slate-400 sm:block">
         {formatTimeHM(new Date(job.scheduledTimestamp))}
       </span>
-      <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${statusCfg.text}`}>
-        <span className={`h-2 w-2 rounded-full ${statusCfg.dot}`} />
-        <span className="hidden sm:inline">{statusCfg.short}</span>
-      </span>
+      <StatusBadge status={job.status} />
       {canInputTime && (
         <div className="w-20 shrink-0 sm:w-24">
           <TimeInput
@@ -232,19 +229,19 @@ function JobRow({
       {isRunning && (
         <button
           onClick={() => onMarkFailed(job.id)}
-          className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+          className="btn-ghost p-1.5 text-red-500 hover:text-red-600"
           aria-label="Mark Failed"
         >
-          ✕
+          <XCircle className="h-4 w-4" strokeWidth={1.5} />
         </button>
       )}
       {isFailed && (
         <button
           onClick={() => onResetJob(job.id)}
-          className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-500/10"
+          className="btn-ghost p-1.5 text-amber-500 hover:text-amber-600"
           aria-label="Reset"
         >
-          ↻
+          <RotateCcw className="h-4 w-4" strokeWidth={1.5} />
         </button>
       )}
     </div>

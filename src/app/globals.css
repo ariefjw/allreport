@@ -3,16 +3,21 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-300: #93c5fd;
-  --color-brand-400: #60a5fa;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
-  --color-brand-900: #1e3a8a;
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+  --color-brand-900: #312e81;
+
+  --color-surface: #f8fafc;
+  --color-surface-dark: #0f172a;
+  --color-border: #e2e8f0;
+  --color-border-dark: #1e293b;
 
   --color-status-waiting: #64748b;
   --color-status-running: #f59e0b;
@@ -28,12 +33,46 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 font-sans dark:bg-slate-950 dark:text-slate-100;
+    @apply bg-surface text-slate-900 font-sans dark:bg-surface-dark dark:text-slate-100;
+  }
+
+  ::selection {
+    @apply bg-brand-500/20 text-brand-900 dark:text-brand-100;
   }
 }
 
 @layer utilities {
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-border bg-white shadow-sm dark:border-border-dark dark:bg-slate-900;
+  }
+
+  .card-header {
+    @apply border-b border-border px-5 py-4 dark:border-border-dark;
+  }
+
+  .card-body {
+    @apply px-5 py-4;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-150 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none bg-brand-600 text-white shadow-sm shadow-brand-600/10 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-150 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none bg-transparent text-slate-600 ring-1 ring-border hover:bg-slate-50 hover:ring-slate-300 dark:text-slate-300 dark:ring-border-dark dark:hover:bg-slate-800/50;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-150 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-slate-900 transition-all placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-border-dark dark:bg-slate-800/50 dark:text-slate-100 dark:placeholder:text-slate-500;
   }
 }

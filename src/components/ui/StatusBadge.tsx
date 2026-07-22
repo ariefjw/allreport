@@ -2,7 +2,7 @@ import type { JobStatus } from "@/types";
 
 const STATUS_CONFIG: Record<
   JobStatus,
-  { label: string; bg: string; text: string; dot: string }
+  { label: string; bg: string; text: string; dot: string; pulse?: boolean }
 > = {
   "*WAITING*": {
     label: "Waiting",
@@ -15,6 +15,7 @@ const STATUS_CONFIG: Record<
     bg: "bg-amber-50 dark:bg-amber-500/10",
     text: "text-amber-700 dark:text-amber-400",
     dot: "bg-status-running",
+    pulse: true,
   },
   "*DONE*": {
     label: "Done",
@@ -35,10 +36,10 @@ export function StatusBadge({ status }: { status: JobStatus }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${config.bg} ${config.text}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold leading-none ${config.bg} ${config.text}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${config.dot}`} />
-      {status}
+      <span className={`relative h-1.5 w-1.5 rounded-full ${config.dot} ${config.pulse ? "animate-pulse" : ""}`} />
+      {config.label}
     </span>
   );
 }

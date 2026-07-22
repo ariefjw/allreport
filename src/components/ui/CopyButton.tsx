@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { Copy, Check } from "lucide-react";
 
 interface CopyButtonProps {
   label: string;
@@ -27,15 +28,15 @@ export function CopyButton({ label, onCopy, variant = "primary" }: CopyButtonPro
   }, [onCopy]);
 
   const baseClasses =
-    "group relative inline-flex items-center justify-center overflow-hidden rounded-xl px-5 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-200 active:scale-[0.97] disabled:opacity-50";
+    "group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl px-5 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-200 active:scale-[0.97] disabled:opacity-50";
 
   const variantClasses =
     variant === "primary"
-      ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:shadow-white/5 dark:hover:bg-slate-100"
-      : "bg-transparent text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 hover:ring-slate-300 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800/50 dark:hover:ring-slate-600";
+      ? "btn-primary"
+      : "btn-secondary";
 
   const copiedClasses = copied
-    ? "bg-emerald-600 text-white ring-0 shadow-lg shadow-emerald-600/20 dark:bg-emerald-500 dark:text-white"
+    ? "bg-emerald-600 text-white ring-0 shadow-lg shadow-emerald-600/20 hover:bg-emerald-600 dark:bg-emerald-500 dark:text-white"
     : "";
 
   return (
@@ -45,9 +46,12 @@ export function CopyButton({ label, onCopy, variant = "primary" }: CopyButtonPro
       disabled={loading}
       className={`${baseClasses} ${copied ? copiedClasses : variantClasses}`}
     >
-      <span className="relative z-10">
-        {copied ? "Copied to clipboard" : label}
-      </span>
+      {copied ? (
+        <Check className="h-4 w-4" strokeWidth={2} />
+      ) : (
+        <Copy className="h-4 w-4" strokeWidth={1.5} />
+      )}
+      <span>{copied ? "Copied!" : label}</span>
     </button>
   );
 }

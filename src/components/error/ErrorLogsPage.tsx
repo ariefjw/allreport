@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { ImagePasteZone } from "@/components/ui/ImagePasteZone";
 import { getTodayDisplay } from "@/lib/utils";
+import { ClipboardPaste } from "lucide-react";
 
 export function ErrorLogsPage() {
   const { logs, loading, error, createLog, deleteLog, deleteMultipleLogs } = useErrorLogs();
@@ -130,7 +131,7 @@ export function ErrorLogsPage() {
           </p>
         )}
 
-        <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="card p-5">
           <h2 className="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
             Live Snippet
           </h2>
@@ -138,6 +139,7 @@ export function ErrorLogsPage() {
           <div className="space-y-4">
             <div className="overflow-hidden rounded-xl border border-slate-300 bg-slate-50 shadow-inner dark:border-slate-700 dark:bg-[#0d1117]">
               <div className="bg-slate-200/50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:bg-white/5 dark:text-slate-400">
+                <ClipboardPaste className="inline-block h-3 w-3" strokeWidth={1.5} />
                 Log Text
               </div>
               <textarea
@@ -166,7 +168,7 @@ export function ErrorLogsPage() {
                 type="button"
                 onClick={handleSaveImage}
                 disabled={saving || !imageFile}
-                className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                className="btn-primary"
               >
                 {saving ? "Uploading..." : "Save Screenshot"}
               </button>
@@ -186,7 +188,7 @@ export function ErrorLogsPage() {
                     type="button"
                     onClick={handleBatchDelete}
                     disabled={deleting}
-                    className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+                    className="btn-ghost rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
                   >
                     {deleting ? "Deleting..." : `Delete (${selectedIds.size})`}
                   </button>
@@ -196,8 +198,8 @@ export function ErrorLogsPage() {
                   onClick={toggleSelectMode}
                   className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
                     selectMode
-                      ? "border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
-                      : "border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-800"
+                      ? "border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-700 dark:bg-brand-500/10 dark:text-brand-300"
+                      : "btn-secondary px-3 py-1.5 text-xs"
                   }`}
                 >
                   {selectMode ? "Cancel" : "Select"}
@@ -210,8 +212,8 @@ export function ErrorLogsPage() {
                   key={log.id}
                   className={`group relative overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-slate-900 ${
                     selectMode && selectedIds.has(log.id)
-                      ? "border-indigo-500 ring-2 ring-indigo-400"
-                      : "border-slate-200 dark:border-slate-800"
+                      ? "border-brand-500 ring-2 ring-brand-400"
+                      : "border-border dark:border-border-dark"
                   }`}
                 >
                   {selectMode ? (
@@ -223,7 +225,7 @@ export function ErrorLogsPage() {
                       <div className="relative aspect-video w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
                         <div className="absolute left-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded border-2 border-white bg-white/80 dark:border-slate-300 dark:bg-slate-800/80">
                           {selectedIds.has(log.id) && (
-                            <svg className="h-3 w-3 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="h-3 w-3 text-brand-600" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           )}

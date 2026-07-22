@@ -13,6 +13,7 @@ import {
   generateIntradayFinishedTimeText,
 } from "@/lib/report-generators/intraday";
 import { getTodayDisplay, isTimeReached } from "@/lib/utils";
+import { Upload, X } from "lucide-react";
 import type { DailyIntradayLog } from "@/types";
 
 function shiftToWIB(timestamp: string | null): string | null {
@@ -155,8 +156,9 @@ export function IntradayJobsPage() {
             />
             <button
               onClick={() => setIsImportModalOpen(true)}
-              className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+              className="btn-primary"
             >
+              <Upload className="h-4 w-4" strokeWidth={1.5} />
               Import
             </button>
           </div>
@@ -192,41 +194,48 @@ export function IntradayJobsPage() {
       </div>
 
       {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="m-4 w-full max-w-lg rounded-lg bg-white p-6 shadow-xl dark:bg-slate-900">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                Import Intraday Report
-              </h2>
-              <button onClick={() => setIsImportModalOpen(false)} className="text-slate-500 hover:text-slate-800 dark:hover:text-slate-300">
-                &times;
-              </button>
-            </div>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              Paste the report text below. The system will only update batches that are not yet marked as finished.
-            </p>
-            <textarea
-              value={importText}
-              onChange={(e) => setImportText(e.target.value)}
-              placeholder={`cbs_mspayment_intraday\n*13/May/2026*\n- batch 1: started 08:30 finished 08:44\n- batch 2: started 09:30 finished 09:43`}
-              className="mt-4 h-48 w-full rounded-md border-slate-300 bg-slate-50 p-2 font-mono text-sm shadow-sm focus:border-slate-500 focus:ring-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
-            />
-            {importError && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{importError}</p>}
-            <div className="mt-4 flex justify-end gap-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="card m-4 w-full max-w-lg">
+            <div className="card-header flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  Import Intraday Report
+                </h2>
+                <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                  Paste the report text below. Only unfinished batches will be updated.
+                </p>
+              </div>
               <button
                 onClick={() => setIsImportModalOpen(false)}
-                disabled={isImporting}
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium border border-slate-200 bg-white hover:bg-slate-100 h-10 px-4 py-2"
+                className="btn-ghost p-1.5"
               >
-                Cancel
+                <X className="h-4 w-4" strokeWidth={1.5} />
               </button>
-              <button
-                onClick={handleImport}
-                disabled={isImporting || !importText}
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium bg-slate-900 text-slate-50 hover:bg-slate-900/90 h-10 px-4 py-2"
-              >
-                {isImporting ? "Importing..." : "Import & Update"}
-              </button>
+            </div>
+            <div className="card-body">
+              <textarea
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                placeholder={`cbs_mspayment_intraday\n*13/May/2026*\n- batch 1: started 08:30 finished 08:44\n- batch 2: started 09:30 finished 09:43`}
+                className="input h-48 resize-none font-mono text-sm"
+              />
+              {importError && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{importError}</p>}
+              <div className="mt-5 flex justify-end gap-3">
+                <button
+                  onClick={() => setIsImportModalOpen(false)}
+                  disabled={isImporting}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleImport}
+                  disabled={isImporting || !importText}
+                  className="btn-primary"
+                >
+                  {isImporting ? "Importing..." : "Import & Update"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -250,8 +259,8 @@ function BatchRow({
   const startedDisplay = batch.startedTime.substring(0, 5);
 
   return (
-    <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2 text-sm dark:border-slate-800">
-      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-bold ${
+    <div className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
+      <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold ${
         isDone
           ? "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400"
           : isActive
@@ -260,12 +269,11 @@ function BatchRow({
       }`}>
         {batch.batchNumber}
       </span>
-      <span className="shrink-0 text-xs text-slate-400 w-10">{startedDisplay}</span>
-      <span className={`flex shrink-0 items-center gap-1 text-xs font-medium ${cfg.text}`}>
-        <span className={`h-2 w-2 rounded-full ${cfg.dot}`} />
+      <span className="text-xs tabular-nums text-slate-500">{startedDisplay}</span>
+      <span className={`flex items-center gap-1.5 text-xs font-medium ${cfg.text}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot} ${status === "active" ? "animate-pulse" : ""}`} />
         <span className="hidden sm:inline">{cfg.short}</span>
       </span>
-      <div className="flex-1" />
       {(isActive || isDone) && (
         <div className="w-20 shrink-0 sm:w-24">
           <TimeInput

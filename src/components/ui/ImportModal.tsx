@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { X, Upload } from "lucide-react";
 
 interface ImportModalProps {
   isOpen: boolean;
@@ -38,40 +39,55 @@ export function ImportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900">
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-          {title}
-        </h2>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          {description}
-        </p>
-
-        <form onSubmit={handleSubmit} className="mt-4">
-          <textarea
-            className="h-64 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-            placeholder="Paste your report here..."
-            value={text}
-            onChange={(e) => setText(e.target.value)}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+      <div className="card w-full max-w-lg">
+        <div className="card-header flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              {title}
+            </h2>
+            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+              {description}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
             disabled={isSubmitting}
-          />
+            className="btn-ghost p-1.5"
+          >
+            <X className="h-4 w-4" strokeWidth={1.5} />
+          </button>
+        </div>
 
-          <div className="mt-6 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
+        <form onSubmit={handleSubmit}>
+          <div className="card-body">
+            <textarea
+              className="input h-64 resize-none font-mono text-sm"
+              placeholder="Paste your report here..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
               disabled={isSubmitting}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !text.trim()}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {isSubmitting ? "Importing..." : "Import"}
-            </button>
+            />
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || !text.trim()}
+                className="btn-primary"
+              >
+                <Upload className="h-4 w-4" strokeWidth={1.5} />
+                {isSubmitting ? "Importing..." : "Import"}
+              </button>
+            </div>
           </div>
         </form>
       </div>
