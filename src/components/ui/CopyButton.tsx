@@ -27,13 +27,7 @@ export function CopyButton({ label, onCopy, variant = "primary" }: CopyButtonPro
     }
   }, [onCopy]);
 
-  const baseClasses =
-    "group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl px-5 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-200 active:scale-[0.97] disabled:opacity-50";
-
-  const variantClasses =
-    variant === "primary"
-      ? "btn-primary"
-      : "btn-secondary";
+  const base = variant === "primary" ? "btn-primary" : "btn-secondary";
 
   const copiedClasses = copied
     ? "bg-emerald-600 text-white ring-0 shadow-lg shadow-emerald-600/20 hover:bg-emerald-600 dark:bg-emerald-500 dark:text-white"
@@ -44,7 +38,7 @@ export function CopyButton({ label, onCopy, variant = "primary" }: CopyButtonPro
       type="button"
       onClick={handleClick}
       disabled={loading}
-      className={`${baseClasses} ${copied ? copiedClasses : variantClasses}`}
+      className={`whitespace-nowrap ${base} ${copiedClasses}`}
     >
       {copied ? (
         <Check className="h-4 w-4" strokeWidth={2} />

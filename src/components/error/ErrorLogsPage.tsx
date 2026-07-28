@@ -8,9 +8,12 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { ImagePasteZone } from "@/components/ui/ImagePasteZone";
 import { getTodayDisplay } from "@/lib/utils";
 import { ClipboardPaste } from "lucide-react";
+import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 
 export function ErrorLogsPage() {
-  const { logs, loading, error, createLog, deleteLog, deleteMultipleLogs } = useErrorLogs();
+  const today = new Date().toLocaleDateString("en-CA");
+  const [selectedDate, setSelectedDate] = useState(today);
+  const { logs, loading, error, createLog, deleteLog, deleteMultipleLogs } = useErrorLogs(selectedDate);
   const [errorText, setErrorText] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -59,6 +62,7 @@ export function ErrorLogsPage() {
     try {
       await createLog({
         errorTitle: autoTitle,
+        errorTextLog: errorText || undefined,
         screenshotFile: imageFile,
       });
       setImageFile(null);
@@ -116,6 +120,7 @@ export function ErrorLogsPage() {
         title="Error / Incident Log"
         description="Document operational errors with screenshots"
         date={getTodayDisplay()}
+        glow="red"
         actions={
           <CopyButton
             label="Copy Text"
@@ -126,19 +131,29 @@ export function ErrorLogsPage() {
 
       <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
         {error && (
-          <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-400">
+          <p className="mb-4 rounded-lg bg-status-failed/10 px-4 py-3 text-sm text-status-failed">
             {error}
           </p>
         )}
 
+        <div className="mb-4 flex items-center gap-3">
+          <label className="text-xs font-medium text-muted">Date</label>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="input w-auto py-1.5 text-sm"
+          />
+        </div>
+
         <div className="card p-5">
-          <h2 className="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <h2 className="mb-4 text-sm font-semibold text-ink">
             Live Snippet
           </h2>
 
           <div className="space-y-4">
-            <div className="overflow-hidden rounded-xl border border-slate-300 bg-slate-50 shadow-inner dark:border-slate-700 dark:bg-[#0d1117]">
-              <div className="bg-slate-200/50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:bg-white/5 dark:text-slate-400">
+            <div className="overflow-hidden rounded-xl border border-hairline bg-surface shadow-inner">
+              <div className="bg-white/[0.03] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted">
                 <ClipboardPaste className="inline-block h-3 w-3" strokeWidth={1.5} />
                 Log Text
               </div>
@@ -148,19 +163,19 @@ export function ErrorLogsPage() {
                 placeholder="Type or paste logs here..."
                 rows={8}
                 spellCheck={false}
-                className="w-full resize-y bg-transparent p-4 font-mono text-sm leading-relaxed text-slate-800 focus:outline-none dark:text-slate-300"
+                className="w-full resize-y bg-transparent p-4 font-mono text-sm leading-relaxed text-ink focus:outline-none"
               />
             </div>
 
             <div>
-              <p className="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+              <p className="mb-2 text-xs font-medium text-muted">
                 Screenshot
               </p>
               <ImagePasteZone preview={imagePreview} onImageChange={handleImageChange} />
             </div>
 
             {saveError && (
-              <p className="text-sm text-red-600 dark:text-red-400">{saveError}</p>
+              <p className="text-sm text-status-failed">{saveError}</p>
             )}
 
             <div className="flex flex-wrap gap-3">
@@ -179,7 +194,7 @@ export function ErrorLogsPage() {
         {screenshots.length > 0 && (
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <h2 className="text-sm font-semibold text-muted">
                 Saved Screenshots ({screenshots.length})
               </h2>
               <div className="flex items-center gap-2">
@@ -188,7 +203,7 @@ export function ErrorLogsPage() {
                     type="button"
                     onClick={handleBatchDelete}
                     disabled={deleting}
-                    className="btn-ghost rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
+                    className="btn-ghost rounded-lg bg-status-failed/10 px-3 py-1.5 text-xs font-medium text-status-failed hover:bg-status-failed/20"
                   >
                     {deleting ? "Deleting..." : `Delete (${selectedIds.size})`}
                   </button>
@@ -198,7 +213,7 @@ export function ErrorLogsPage() {
                   onClick={toggleSelectMode}
                   className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
                     selectMode
-                      ? "border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-700 dark:bg-brand-500/10 dark:text-brand-300"
+                      ? "border-status-running bg-status-running/10 text-status-running"
                       : "btn-secondary px-3 py-1.5 text-xs"
                   }`}
                 >
@@ -210,10 +225,10 @@ export function ErrorLogsPage() {
               {screenshots.map((log) => (
                 <div
                   key={log.id}
-                  className={`group relative overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-slate-900 ${
+                  className={`group relative overflow-hidden rounded-xl border bg-surface ${
                     selectMode && selectedIds.has(log.id)
-                      ? "border-brand-500 ring-2 ring-brand-400"
-                      : "border-border dark:border-border-dark"
+                      ? "border-status-running ring-2 ring-status-running/50"
+                      : "border-hairline-strong"
                   }`}
                 >
                   {selectMode ? (
@@ -222,10 +237,10 @@ export function ErrorLogsPage() {
                       onClick={() => toggleSelect(log.id)}
                       className="block w-full text-left"
                     >
-                      <div className="relative aspect-video w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-                        <div className="absolute left-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded border-2 border-white bg-white/80 dark:border-slate-300 dark:bg-slate-800/80">
+                        <div className="relative aspect-video w-full overflow-hidden bg-surface-elevated">
+                        <div className="absolute left-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded border-2 border-white/50 bg-surface-elevated/80">
                           {selectedIds.has(log.id) && (
-                            <svg className="h-3 w-3 text-brand-600" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="h-3 w-3 text-status-running" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           )}
@@ -238,10 +253,10 @@ export function ErrorLogsPage() {
                         />
                       </div>
                       <div className="p-2">
-                        <p className="truncate text-xs font-medium text-slate-700 dark:text-slate-300">
+                        <p className="truncate text-xs font-medium text-ink">
                           {log.errorTitle}
                         </p>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[10px] text-muted">
                           {new Date(log.createdAt).toLocaleTimeString("en-ID", {
                             timeZone: "Asia/Jakarta",
                             hour: "2-digit",
@@ -268,7 +283,7 @@ export function ErrorLogsPage() {
                         rel="noopener noreferrer"
                         className="block"
                       >
-                        <div className="aspect-video w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                        <div className="aspect-video w-full overflow-hidden bg-surface-elevated">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={log.screenshotUrl!}
@@ -277,10 +292,10 @@ export function ErrorLogsPage() {
                           />
                         </div>
                         <div className="p-2">
-                          <p className="truncate text-xs font-medium text-slate-700 dark:text-slate-300">
+                          <p className="truncate text-xs font-medium text-ink">
                             {log.errorTitle}
                           </p>
-                          <p className="text-[10px] text-slate-400">
+                          <p className="text-[10px] text-muted">
                             {new Date(log.createdAt).toLocaleTimeString("en-ID", {
                               timeZone: "Asia/Jakarta",
                               hour: "2-digit",
@@ -297,8 +312,9 @@ export function ErrorLogsPage() {
           </div>
         )}
 
+        {loading && <div className="py-4"><SkeletonCard /></div>}
         {!loading && screenshots.length === 0 && (
-          <p className="py-8 text-center text-sm text-slate-400">
+          <p className="py-8 text-center text-sm text-muted">
             No screenshots saved yet.
           </p>
         )}

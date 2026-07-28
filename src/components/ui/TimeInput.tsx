@@ -70,7 +70,7 @@ export function TimeInput({
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</label>
+        <label className="text-xs font-medium text-muted">{label}</label>
       )}
       <input
         type="tel"

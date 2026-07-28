@@ -1,0 +1,74 @@
+"use client";
+
+interface KpiBarProps {
+  waiting: number;
+  running: number;
+  done: number;
+  failed: number;
+}
+
+const ITEMS = [
+  {
+    key: "waiting" as const,
+    label: "Waiting",
+    dot: "bg-status-waiting",
+    text: "text-muted",
+    pulse: false,
+  },
+  {
+    key: "running" as const,
+    label: "Running",
+    dot: "bg-status-running",
+    text: "text-status-running",
+    pulse: true,
+  },
+  {
+    key: "done" as const,
+    label: "Done",
+    dot: "bg-status-done",
+    text: "text-status-done",
+    pulse: false,
+  },
+  {
+    key: "failed" as const,
+    label: "Failed",
+    dot: "bg-status-failed",
+    text: "text-status-failed",
+    pulse: false,
+    glow: "shadow-[0_0_8px_rgba(239,68,68,0.25)]",
+  },
+];
+
+export function KpiBar({ waiting, running, done, failed }: KpiBarProps) {
+  const counts = { waiting, running, done, failed };
+
+  const handleClick = (status: string) => {
+    const el = document.getElementById(`group-*${status.toUpperCase()}*`);
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <div className="border-b border-hairline">
+      <div className="mx-auto flex max-w-6xl items-stretch gap-3 px-4 py-3 sm:px-6">
+        {ITEMS.map((item) => {
+          const count = counts[item.key];
+          return (
+            <button
+              key={item.key}
+              onClick={() => handleClick(item.key)}
+              className={`flex flex-1 items-center gap-2.5 rounded-lg border border-hairline-strong bg-surface px-4 py-2.5 text-xs transition-all duration-150 hover:bg-surface-elevated sm:flex-none sm:min-w-[110px] ${item.glow ?? ""}`}
+            >
+              <span
+                className={`h-2.5 w-2.5 shrink-0 rounded-full ${item.dot} ${item.pulse ? "animate-pulse" : ""}`}
+              />
+              <div className="flex flex-1 items-center justify-between gap-2">
+                <span className="text-muted">{item.label}</span>
+                <span className={`font-bold tabular-nums ${item.text}`}>{count}</span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

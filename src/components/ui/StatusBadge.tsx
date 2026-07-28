@@ -2,43 +2,41 @@ import type { JobStatus } from "@/types";
 
 const STATUS_CONFIG: Record<
   JobStatus,
-  { label: string; bg: string; text: string; dot: string; pulse?: boolean }
+  { label: string; dot: string; text: string; pulse?: boolean; glow?: string }
 > = {
   "*WAITING*": {
     label: "Waiting",
-    bg: "bg-slate-100 dark:bg-slate-800",
-    text: "text-slate-600 dark:text-slate-300",
     dot: "bg-status-waiting",
+    text: "text-status-waiting",
   },
   "*RUNNING*": {
     label: "Running",
-    bg: "bg-amber-50 dark:bg-amber-500/10",
-    text: "text-amber-700 dark:text-amber-400",
     dot: "bg-status-running",
+    text: "text-status-running",
     pulse: true,
   },
   "*DONE*": {
     label: "Done",
-    bg: "bg-green-50 dark:bg-green-500/10",
-    text: "text-green-700 dark:text-green-400",
     dot: "bg-status-done",
+    text: "text-status-done",
   },
   "*FAILED*": {
     label: "Failed",
-    bg: "bg-red-50 dark:bg-red-500/10",
-    text: "text-red-700 dark:text-red-400",
     dot: "bg-status-failed",
+    text: "text-status-failed",
+    glow: "shadow-[0_0_10px_rgba(239,68,68,0.30)]",
   },
 };
 
 export function StatusBadge({ status }: { status: JobStatus }) {
   const config = STATUS_CONFIG[status];
+  const dotClass = `h-2 w-2 rounded-full ${config.dot} ${config.pulse ? "animate-pulse" : ""}`;
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold leading-none ${config.bg} ${config.text}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border border-hairline-strong bg-surface-elevated px-3 py-1 text-xs font-semibold leading-none ${config.text} ${config.glow ?? ""}`}
     >
-      <span className={`relative h-1.5 w-1.5 rounded-full ${config.dot} ${config.pulse ? "animate-pulse" : ""}`} />
+      <span className={dotClass} />
       {config.label}
     </span>
   );

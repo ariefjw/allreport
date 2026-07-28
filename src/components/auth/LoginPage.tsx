@@ -24,20 +24,20 @@ export function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-white to-brand-50 px-4 dark:from-slate-950 dark:via-slate-950 dark:to-brand-950/30">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-500/5 via-transparent to-transparent dark:from-brand-500/10" />
-      <div className="card relative w-full max-w-sm p-8 shadow-xl shadow-slate-200/50 dark:shadow-slate-950">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-canvas px-4">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_80%_40%_at_50%_-20%,rgba(59,130,246,0.10),transparent)]" />
+      <div className="card relative w-full max-w-sm p-8">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-lg shadow-brand-500/20">
-            <Zap className="h-6 w-6 text-white" strokeWidth={2} />
+          <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-ink/10">
+            <Zap className="h-5 w-5 text-ink" strokeWidth={2} />
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Job Track Central</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Sign in to continue</p>
+          <h1 className="text-xl font-bold tracking-tight text-ink">Job Track Central</h1>
+          <p className="mt-1 text-sm text-muted">Sign in to continue</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">
+            <label className="mb-1.5 block text-xs font-medium text-muted">
               Email
             </label>
             <input
@@ -50,7 +50,7 @@ export function LoginPage() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">
+            <label className="mb-1.5 block text-xs font-medium text-muted">
               Password
             </label>
             <div className="relative">
@@ -65,7 +65,7 @@ export function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -78,7 +78,7 @@ export function LoginPage() {
           </div>
 
           {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
+            <div className="rounded-lg border border-status-failed/20 bg-status-failed/10 px-4 py-3 text-sm text-status-failed">
               {error}
             </div>
           )}

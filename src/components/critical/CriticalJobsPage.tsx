@@ -6,13 +6,14 @@ import { useReportReminder } from "@/hooks/useReportReminder";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { ImportModal } from "@/components/ui/ImportModal";
-import { StatusSummary } from "@/components/ui/StatusSummary";
+import { KpiBar } from "@/components/ui/KpiBar";
 import { JobGroup } from "@/components/ui/JobGroup";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TimeInput } from "@/components/ui/TimeInput";
 import { generateCriticalReportText, generateCriticalDurationText } from "@/lib/report-generators/critical";
 import { formatTimeHM, getTodayDisplay } from "@/lib/utils";
 import { Upload, RotateCcw, XCircle } from "lucide-react";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import type { DailyMonitoringLog } from "@/types";
 
 function useGroupedJobs(jobs: DailyMonitoringLog[]) {
@@ -31,9 +32,18 @@ function useGroupedJobs(jobs: DailyMonitoringLog[]) {
 }
 
 export function CriticalJobsPage() {
-  const { jobs, updateEndTime, markFailed, resetJob, bulkImportEndTimes } = useCriticalJobs();
+  const { jobs, loading, updateEndTime, markFailed, resetJob, bulkImportEndTimes } = useCriticalJobs();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const grouped = useGroupedJobs(jobs);
+  const [searchText, setSearchText] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const filteredJobs = useMemo(() => {
+    return jobs.filter((job) => {
+      if (statusFilter !== "all" && job.status !== statusFilter) return false;
+      if (searchText && !job.jobName.toLowerCase().includes(searchText.toLowerCase())) return false;
+      return true;
+    });
+  }, [jobs, searchText, statusFilter]);
+  const grouped = useGroupedJobs(filteredJobs);
 
   useReportReminder(jobs);
 
@@ -121,37 +131,67 @@ export function CriticalJobsPage() {
     { status: "*WAITING*", title: "Waiting", defaultExpanded: false },
   ];
 
+  const headerActions = (
+    <>
+      <CopyButton
+        label="Copy Report"
+        onCopy={async () => generateCriticalReportText(jobs)}
+      />
+      <CopyButton
+        label="Copy Duration"
+        variant="secondary"
+        onCopy={async () => generateCriticalDurationText(jobs)}
+      />
+      <button
+        onClick={() => setIsImportModalOpen(true)}
+        className="btn-primary"
+      >
+        <Upload className="h-4 w-4" strokeWidth={1.5} />
+        Import
+      </button>
+    </>
+  );
+
   return (
     <>
       <PageHeader
         title="Critical Job Priority"
         description="Airflow batch job monitoring"
         date={getTodayDisplay()}
-        actions={
-          <div className="relative z-50 flex items-center gap-2">
-            <CopyButton
-              label="Copy Report"
-              onCopy={async () => generateCriticalReportText(jobs)}
-            />
-            <CopyButton
-              label="Copy Duration"
-              variant="secondary"
-              onCopy={async () => generateCriticalDurationText(jobs)}
-            />
-            <button
-              onClick={() => setIsImportModalOpen(true)}
-              className="btn-primary"
-            >
-              <Upload className="h-4 w-4" strokeWidth={1.5} />
-              Import
-            </button>
-          </div>
-        }
+        glow="amber"
+        actions={headerActions}
+        mobileActions={headerActions}
       />
 
-      <StatusSummary {...summary} />
+      <KpiBar {...summary} />
 
       <div className="mx-auto max-w-6xl">
+        <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
+          <input
+            type="text"
+            placeholder="Search jobs..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="input h-8 px-3 py-0 text-xs sm:w-52"
+          />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="input h-8 w-auto px-3 py-0 text-xs"
+          >
+            <option value="all">All Status</option>
+            <option value="*FAILED*">Failed</option>
+            <option value="*RUNNING*">Running</option>
+            <option value="*DONE*">Done</option>
+            <option value="*WAITING*">Waiting</option>
+          </select>
+          {loading && (
+            <span className="flex items-center gap-1.5 text-xs text-muted">
+              <span className="h-1.5 w-1.5 rounded-full bg-status-running animate-pulse" />
+              Refreshing...
+            </span>
+          )}
+        </div>
         {sections.map(({ status, title, defaultExpanded }) => {
           const items = grouped[status];
           if (!items?.length) return null;
@@ -172,8 +212,9 @@ export function CriticalJobsPage() {
           );
         })}
 
-        {jobs.length === 0 && (
-          <p className="py-12 text-center text-sm text-slate-400">No jobs loaded.</p>
+        {loading && <div className="px-4 py-4 sm:px-6"><SkeletonCard /></div>}
+        {!loading && jobs.length === 0 && (
+          <p className="py-12 text-center text-sm text-muted">No jobs loaded.</p>
         )}
       </div>
 
@@ -207,14 +248,14 @@ function JobRow({
   const canInputTime = isRunning || isDone;
 
   return (
-    <div className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
-      <span className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-xs font-medium tabular-nums text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-white/[0.02]">
+      <span className="flex h-5 w-5 items-center justify-center rounded-md bg-surface-elevated text-[11px] font-medium tabular-nums text-muted">
         {displayNumber}
       </span>
-      <span className="min-w-0 truncate font-medium text-slate-800 dark:text-slate-200">
+      <span className="font-medium text-ink break-words pr-2">
         {job.jobName}
       </span>
-      <span className="hidden text-xs text-slate-400 sm:block">
+      <span className="hidden text-xs text-muted sm:block whitespace-nowrap">
         {formatTimeHM(new Date(job.scheduledTimestamp))}
       </span>
       <StatusBadge status={job.status} />
@@ -228,8 +269,12 @@ function JobRow({
       )}
       {isRunning && (
         <button
-          onClick={() => onMarkFailed(job.id)}
-          className="btn-ghost p-1.5 text-red-500 hover:text-red-600"
+          onClick={() => {
+            if (window.confirm(`Mark "${job.jobName}" as failed?`)) {
+              onMarkFailed(job.id);
+            }
+          }}
+          className="btn-ghost p-1.5 text-status-failed hover:text-status-failed"
           aria-label="Mark Failed"
         >
           <XCircle className="h-4 w-4" strokeWidth={1.5} />
@@ -237,8 +282,12 @@ function JobRow({
       )}
       {isFailed && (
         <button
-          onClick={() => onResetJob(job.id)}
-          className="btn-ghost p-1.5 text-amber-500 hover:text-amber-600"
+          onClick={() => {
+            if (window.confirm(`Reset "${job.jobName}" to RUNNING?`)) {
+              onResetJob(job.id);
+            }
+          }}
+          className="btn-ghost p-1.5 text-status-running hover:text-status-running"
           aria-label="Reset"
         >
           <RotateCcw className="h-4 w-4" strokeWidth={1.5} />

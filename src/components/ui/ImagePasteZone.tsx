@@ -74,12 +74,12 @@ export function ImagePasteZone({ preview, onImageChange }: ImagePasteZoneProps) 
       }}
       onDragLeave={() => setIsDragOver(false)}
       onDrop={handleDrop}
-      className={`relative flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition-all outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 ${
+      className={`relative flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition-all outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 ${
         isDragOver
-          ? "border-brand-400 bg-brand-50 dark:bg-brand-500/10"
+          ? "border-accent bg-accent/10"
           : preview
-            ? "border-green-300 bg-green-50/50 dark:border-green-600 dark:bg-green-500/10"
-            : "border-slate-300 bg-slate-50 hover:border-slate-400 dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-slate-500"
+            ? "border-status-done bg-status-done/10"
+            : "border-hairline-strong bg-surface hover:border-muted/30"
       }`}
     >
       <input
@@ -101,24 +101,24 @@ export function ImagePasteZone({ preview, onImageChange }: ImagePasteZoneProps) 
           <button
             type="button"
             onClick={handleRemove}
-            className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600"
+            className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-destructive text-white shadow-md hover:bg-destructive/90"
           >
             <X className="h-4 w-4" strokeWidth={2} />
           </button>
         </div>
       ) : (
         <div className="text-center">
-          <ImageIcon className="mx-auto h-10 w-10 text-slate-400" strokeWidth={1} />
-          <p className="mt-3 text-sm font-medium text-slate-600 dark:text-slate-300">
+          <ImageIcon className="mx-auto h-10 w-10 text-muted" strokeWidth={1} />
+          <p className="mt-3 text-sm font-medium text-muted">
             Paste screenshot here
           </p>
-          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-            Click this area, then press <kbd className="rounded-md bg-slate-200 px-1.5 py-0.5 font-mono text-xs dark:bg-slate-700 dark:text-slate-300">Ctrl+V</kbd>
+          <p className="mt-1 text-xs text-muted">
+            Click this area, then press <kbd className="rounded-md bg-surface-elevated px-1.5 py-0.5 font-mono text-xs text-muted">Ctrl+V</kbd>
           </p>
           <div className="mt-3 flex items-center gap-2">
-            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-            <span className="text-xs text-slate-400">or</span>
-            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+            <span className="h-px flex-1 bg-hairline" />
+            <span className="text-xs text-muted">or</span>
+            <span className="h-px flex-1 bg-hairline" />
           </div>
           <button
             type="button"
