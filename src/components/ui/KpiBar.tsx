@@ -49,14 +49,14 @@ export function KpiBar({ waiting, running, done, failed }: KpiBarProps) {
 
   return (
     <div className="border-b border-hairline">
-      <div className="mx-auto flex max-w-6xl items-stretch gap-3 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-stretch gap-2 px-3 py-2.5 sm:gap-3 sm:px-6">
         {ITEMS.map((item) => {
           const count = counts[item.key];
           return (
             <button
               key={item.key}
               onClick={() => handleClick(item.key)}
-              className={`flex flex-1 items-center gap-2.5 rounded-lg border border-hairline-strong bg-surface px-4 py-2.5 text-xs transition-all duration-150 hover:bg-surface-elevated sm:flex-none sm:min-w-[110px] ${item.glow ?? ""}`}
+              className={`flex flex-1 basis-[calc(50%-4px)] items-center gap-2 rounded-lg border border-hairline-strong bg-surface px-3 py-2 text-xs transition-all duration-150 hover:bg-surface-elevated sm:basis-auto sm:px-4 sm:py-2.5 ${item.glow ?? ""}`}
             >
               <span
                 className={`h-2.5 w-2.5 shrink-0 rounded-full ${item.dot} ${item.pulse ? "animate-pulse" : ""}`}

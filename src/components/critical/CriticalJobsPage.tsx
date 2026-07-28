@@ -152,6 +152,27 @@ export function CriticalJobsPage() {
     </>
   );
 
+  const mobileActions = (
+    <>
+      <CopyButton
+        label="Copy Duration"
+        variant="secondary"
+        onCopy={async () => generateCriticalDurationText(jobs)}
+      />
+      <button
+        onClick={() => setIsImportModalOpen(true)}
+        className="btn-primary"
+      >
+        <Upload className="h-4 w-4" strokeWidth={1.5} />
+        Import
+      </button>
+      <CopyButton
+        label="Copy Report"
+        onCopy={async () => generateCriticalReportText(jobs)}
+      />
+    </>
+  );
+
   return (
     <>
       <PageHeader
@@ -160,7 +181,7 @@ export function CriticalJobsPage() {
         date={getTodayDisplay()}
         glow="amber"
         actions={headerActions}
-        mobileActions={headerActions}
+        mobileActions={mobileActions}
       />
 
       <KpiBar {...summary} />

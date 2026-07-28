@@ -30,7 +30,7 @@ function NavTab({ item }: { item: NavItem }) {
   return (
     <Link
       href={item.href}
-      className={`relative flex items-center gap-2 px-4 py-1.5 text-sm font-medium transition-colors duration-150 ${
+      className={`relative flex items-center gap-2 px-2.5 py-1.5 text-sm font-medium transition-colors duration-150 sm:px-4 ${
         isActive ? "text-ink" : "text-muted hover:text-body"
       }`}
     >
@@ -48,12 +48,12 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-hairline bg-canvas/80 backdrop-blur-lg">
       <div className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2 sm:gap-6">
           <div className="flex items-center gap-2.5">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10">
               <Zap className="h-3.5 w-3.5 text-accent" strokeWidth={2} />
             </div>
-            <p className="text-sm font-semibold text-ink">Job Track</p>
+            <p className="text-sm font-semibold text-ink max-sm:hidden">Job Track</p>
           </div>
           <nav className="flex items-center gap-1">
             {NAV_ITEMS.map((item) => (

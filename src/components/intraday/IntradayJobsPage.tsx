@@ -151,6 +151,27 @@ export function IntradayJobsPage() {
     </>
   );
 
+  const mobileActions = (
+    <>
+      <CopyButton
+        label="Copy Finished Time"
+        variant="secondary"
+        onCopy={async () => generateIntradayFinishedTimeText(getReportReadyBatches())}
+      />
+      <button
+        onClick={() => setIsImportModalOpen(true)}
+        className="btn-primary"
+      >
+        <Upload className="h-4 w-4" strokeWidth={1.5} />
+        Import
+      </button>
+      <CopyButton
+        label="Copy Intraday Report"
+        onCopy={async () => generateIntradayReportText(getReportReadyBatches())}
+      />
+    </>
+  );
+
   return (
     <>
       <PageHeader
@@ -159,7 +180,7 @@ export function IntradayJobsPage() {
         date={getTodayDisplay()}
         glow="blue"
         actions={headerActions}
-        mobileActions={headerActions}
+        mobileActions={mobileActions}
       />
 
       <KpiBar {...summary} />
