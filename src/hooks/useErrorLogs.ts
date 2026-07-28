@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/providers/AuthProvider";
 import type { DailyErrorLog } from "@/types";
 
-export function useErrorLogs() {
+export function useErrorLogs(selectedDate?: string) {
   const { isReady, isAuthenticated } = useAuth();
   const [logs, setLogs] = useState<DailyErrorLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,22 +14,22 @@ export function useErrorLogs() {
   // 1. Inisialisasi Supabase
   const supabase = useMemo(() => createClient(), []);
 
-  const fetchLogs = useCallback(async () => {
-    // ... (Logika fetch API Anda saat ini, misal fetch("/api/error-logs"))
-    const res = await fetch("/api/error-logs");
+  const fetchLogs = useCallback(async (date?: string) => {
+    const url = date ? `/api/error-logs?date=${date}` : "/api/error-logs";
+    const res = await fetch(url);
     if (!res.ok) throw new Error("Failed to fetch logs");
     return res.json();
   }, []);
 
   const refresh = useCallback(async () => {
     try {
-      const data = await fetchLogs();
+      const data = await fetchLogs(selectedDate);
       setLogs(data);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
     }
-  }, [fetchLogs]);
+  }, [fetchLogs, selectedDate]);
 
   // 2. Initial Fetch
   useEffect(() => {
