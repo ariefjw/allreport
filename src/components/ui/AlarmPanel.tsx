@@ -58,7 +58,7 @@ export function AlarmPanel({ onClose }: AlarmPanelProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 flex max-h-[80vh] w-full flex-col rounded-t-2xl bg-surface sm:mx-4 sm:max-w-md sm:rounded-2xl">
+      <div className="relative z-10 flex max-h-[65vh] w-full flex-col rounded-t-2xl bg-surface sm:max-h-[75vh] sm:mx-4 sm:max-w-md sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-hairline px-5 py-4">
           <h2 className="text-sm font-semibold text-ink">Alarm Schedule</h2>
           <button onClick={onClose} className="btn-ghost p-1">
