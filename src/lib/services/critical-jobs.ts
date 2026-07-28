@@ -117,6 +117,22 @@ export async function updateCriticalJobEndTime(
   return data as DbDailyMonitoringLog;
 }
 
+export async function resetCriticalJob(supabase: SupabaseClient, id: string) {
+  const { data, error } = await supabase
+    .from("daily_monitoring_log")
+    .update({
+      status: "*RUNNING*",
+      end_timestamp: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as DbDailyMonitoringLog;
+}
+
 export async function markCriticalJobFailed(supabase: SupabaseClient, id: string) {
   const { data, error } = await supabase
     .from("daily_monitoring_log")

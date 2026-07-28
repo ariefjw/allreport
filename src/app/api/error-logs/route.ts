@@ -3,12 +3,13 @@ import { requireAuth, handleApiError } from "@/lib/api/auth";
 import { getErrorLogs, createErrorLog, deleteErrorLog } from "@/lib/services/error-logs";
 import { mapErrorLog } from "@/lib/db/mappers";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const { supabase, response } = await requireAuth();
     if (response) return response;
 
-    const rows = await getErrorLogs(supabase!);
+    const date = request.nextUrl.searchParams.get("date") || undefined;
+    const rows = await getErrorLogs(supabase!, date);
     return NextResponse.json(rows.map(mapErrorLog));
   } catch (error) {
     return handleApiError(error);

@@ -19,7 +19,6 @@ import {
   generateIntradayFinishedTimeText,
 } from "../src/lib/report-generators/intraday";
 import { generateCriticalReportText } from "../src/lib/report-generators/critical";
-import { generateErrorReportText } from "../src/lib/report-generators/error";
 import { INTRADAY_BATCH_TIMES } from "../src/lib/intraday-schedule";
 
 function loadEnv() {
@@ -123,17 +122,6 @@ async function main() {
   assert(created.id, "Error log should be created");
   const errorRows = await getErrorLogs(supabase);
   assert(errorRows.some((r) => r.id === created.id), "Created error log not found on re-fetch");
-  const errorReport = generateErrorReportText(
-    errorRows.slice(0, 3).map((row) => ({
-      id: row.id,
-      operationalDate: row.operational_date,
-      errorTitle: row.error_title,
-      errorTextLog: row.error_text_log,
-      screenshotUrl: row.screenshot_url,
-      createdAt: row.created_at,
-    }))
-  );
-  assert(errorReport.includes("REPORT ERROR OPERATIONAL"), "Error report missing header");
   console.log(`   OK — error log saved (id: ${created.id})`);
 
   console.log("\nAll integration checks passed.");

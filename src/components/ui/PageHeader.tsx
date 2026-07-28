@@ -39,7 +39,7 @@ export function PageHeader({ title, description, date, actions, mobileActions, g
       </div>
       {mobileActions && (
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-hairline bg-canvas/90 backdrop-blur-lg safe-bottom md:hidden">
-          <div className="grid grid-cols-3 gap-2 px-4 py-3 *:w-full">
+          <div className="flex flex-wrap items-center gap-1.5 px-3 py-2.5 *:flex-1">
             {mobileActions}
           </div>
         </div>

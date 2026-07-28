@@ -166,13 +166,13 @@ export function CriticalJobsPage() {
       <KpiBar {...summary} />
 
       <div className="mx-auto max-w-6xl">
-        <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3 px-4 py-3 sm:px-6">
           <input
             type="text"
             placeholder="Search jobs..."
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            className="input h-8 px-3 py-0 text-xs sm:w-52"
+            className="input h-8 min-w-0 flex-1 px-3 py-0 text-xs sm:w-52 sm:flex-none"
           />
           <select
             value={statusFilter}

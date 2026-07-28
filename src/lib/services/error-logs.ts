@@ -2,8 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DbDailyErrorLog } from "@/lib/db/types";
 import { getOperationalDate } from "@/lib/operational-date";
 
-export async function getErrorLogs(supabase: SupabaseClient) {
-  const operationalDate = getOperationalDate();
+export async function getErrorLogs(supabase: SupabaseClient, date?: string) {
+  const operationalDate = date ?? getOperationalDate();
   const { data, error } = await supabase
     .from("daily_error_log")
     .select("*")

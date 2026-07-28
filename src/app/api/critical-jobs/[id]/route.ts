@@ -3,6 +3,7 @@ import { requireAuth, handleApiError } from "@/lib/api/auth";
 import {
   updateCriticalJobEndTime,
   markCriticalJobFailed,
+  resetCriticalJob,
 } from "@/lib/services/critical-jobs";
 import { mapCriticalLog } from "@/lib/db/mappers";
 
@@ -19,6 +20,11 @@ export async function PATCH(
 
     if (body.action === "mark_failed") {
       const row = await markCriticalJobFailed(supabase!, id);
+      return NextResponse.json(mapCriticalLog(row));
+    }
+
+    if (body.action === "reset") {
+      const row = await resetCriticalJob(supabase!, id);
       return NextResponse.json(mapCriticalLog(row));
     }
 

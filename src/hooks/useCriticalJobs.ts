@@ -141,22 +141,18 @@ export function useCriticalJobs() {
   // 2. Fungsi resetJob yang sudah dirapikan
   const resetJob = useCallback(async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('daily_monitoring_log')
-        .update({ 
-           status: '*RUNNING*', 
-           end_timestamp: null 
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-      
-      // 3. Gunakan refresh() agar tampilan UI ikut berubah seketika
-      await refresh(); 
+      const res = await fetch(`/api/critical-jobs/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reset" }),
+      });
+      if (!res.ok) throw new Error("Failed to reset job");
+      const updated = await res.json();
+      setJobs((prev) => prev.map((j) => (j.id === id ? updated : j)));
     } catch (err) {
       console.error("Gagal reset job:", err);
     }
-  }, [supabase, refresh]);
+  }, []);
 
   // 4. Return sudah dibersihkan dari duplikasi
   return { jobs, loading, error, updateEndTime, markFailed, refresh, bulkImportEndTimes, resetJob };
