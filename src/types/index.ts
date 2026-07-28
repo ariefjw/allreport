@@ -49,3 +49,14 @@ export interface NavItem {
   shortLabel: string;
   icon: "critical" | "intraday" | "error";
 }
+
+export interface AlarmSchedule {
+  id: string;
+  alarmTime: string; // HH:MM:SS
+  label: string;
+  daysOfWeek: number; // bitmask: 1=Sun..64=Sat
+  targetPage: string | null;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

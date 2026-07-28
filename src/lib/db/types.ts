@@ -43,3 +43,15 @@ export interface DbMasterIntradayBatch {
   batch_number: number;
   default_started_time: string;
 }
+
+export interface DbAlarmSchedule {
+  id: string;
+  user_id: string;
+  alarm_time: string;
+  label: string;
+  days_of_week: number;
+  target_page: string | null;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}

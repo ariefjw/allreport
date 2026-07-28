@@ -3,6 +3,7 @@ import { Fira_Sans, Fira_Code } from "next/font/google";
 import { AppShell } from "@/components/layout/AppShell";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+import { AlarmProvider } from "@/components/providers/AlarmProvider";
 import "./globals.css";
 
 const firaSans = Fira_Sans({
@@ -33,7 +34,9 @@ export default function RootLayout({
       <body className={`${firaSans.variable} ${firaCode.variable} antialiased`}>
         <ThemeProvider>
           <AuthProvider>
-            <AppShell>{children}</AppShell>
+            <AlarmProvider>
+              <AppShell>{children}</AppShell>
+            </AlarmProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

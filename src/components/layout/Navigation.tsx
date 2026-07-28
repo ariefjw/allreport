@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Zap, Clock, AlertTriangle, LogOut } from "lucide-react";
+import { Zap, Clock, AlertTriangle, Bell, LogOut } from "lucide-react";
 import type { NavItem } from "@/types";
 import { logoutAction } from "@/app/login/actions";
+import { useRealtimeClock } from "@/hooks/useRealtimeClock";
+import { useAlarmContext } from "@/components/providers/AlarmProvider";
+import { AlarmPanel } from "@/components/ui/AlarmPanel";
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/critical-jobs", label: "Critical Jobs", shortLabel: "Critical", icon: "critical" },
@@ -30,7 +33,7 @@ function NavTab({ item }: { item: NavItem }) {
   return (
     <Link
       href={item.href}
-      className={`relative flex items-center gap-2 px-2.5 py-1.5 text-sm font-medium transition-colors duration-150 sm:px-4 ${
+      className={`relative flex items-center gap-2 px-1.5 py-1.5 text-sm font-medium transition-colors duration-150 sm:px-4 ${
         isActive ? "text-ink" : "text-muted hover:text-body"
       }`}
     >
@@ -45,6 +48,9 @@ function NavTab({ item }: { item: NavItem }) {
 }
 
 export function TopNav() {
+  const { timeStr } = useRealtimeClock();
+  const { ringing, showPanel, setShowPanel } = useAlarmContext();
+
   return (
     <header className="sticky top-0 z-50 border-b border-hairline bg-canvas/80 backdrop-blur-lg">
       <div className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 sm:px-6">
@@ -61,20 +67,44 @@ export function TopNav() {
             ))}
           </nav>
         </div>
-        <form
-          action={logoutAction}
-          onSubmit={(e) => {
-            if (!confirm("Are you sure you want to sign out?")) {
-              e.preventDefault();
-            }
-          }}
-        >
-          <button type="submit" className="btn-ghost gap-1.5 px-2.5 py-1.5 text-xs">
-            <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
-            <span className="hidden sm:inline">Sign Out</span>
+        <div className="flex items-center gap-1 sm:gap-2">
+          {timeStr && (
+            <span className="hidden font-mono text-xs tabular-nums text-muted sm:inline">
+              <span className="text-ink">{timeStr.slice(0, 5)}</span>
+              <span className="text-muted/60">:{timeStr.slice(6, 8)}</span>
+            </span>
+          )}
+          <button
+            onClick={() => setShowPanel(!showPanel)}
+            className={`btn-ghost relative gap-1 px-1.5 py-1.5 sm:px-2 ${
+              ringing ? "text-accent" : ""
+            }`}
+            aria-label="Alarms"
+          >
+            <Bell className="h-3.5 w-3.5" strokeWidth={ringing ? 2 : 1.5} />
+            {ringing && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+              </span>
+            )}
           </button>
-        </form>
+          <form
+            action={logoutAction}
+            onSubmit={(e) => {
+              if (!confirm("Are you sure you want to sign out?")) {
+                e.preventDefault();
+              }
+            }}
+          >
+            <button type="submit" className="btn-ghost gap-1.5 px-1.5 py-1.5 text-xs sm:px-2.5">
+              <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
+          </form>
+        </div>
       </div>
+      {showPanel && <AlarmPanel onClose={() => setShowPanel(false)} />}
     </header>
   );
 }
