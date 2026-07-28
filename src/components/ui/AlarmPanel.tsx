@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Plus, Trash2, Bell, BellOff } from "lucide-react";
-import { useAlarms } from "@/hooks/useAlarms";
+import { useAlarmContext } from "@/components/providers/AlarmProvider";
 import type { AlarmSchedule } from "@/types";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -25,7 +25,7 @@ interface AlarmPanelProps {
 }
 
 export function AlarmPanel({ onClose }: AlarmPanelProps) {
-  const { alarms, create, update, remove, loading } = useAlarms();
+  const { alarms, create, update, remove, loading, masterEnabled, setMasterEnabled } = useAlarmContext();
   const [showForm, setShowForm] = useState(false);
   const [time, setTime] = useState("08:00");
   const [label, setLabel] = useState("");
@@ -56,14 +56,31 @@ export function AlarmPanel({ onClose }: AlarmPanelProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 flex max-h-[65vh] w-full flex-col rounded-t-2xl bg-surface sm:max-h-[75vh] sm:mx-4 sm:max-w-md sm:rounded-2xl">
+      <div className="relative z-10 flex max-h-[65vh] w-full flex-col rounded-2xl bg-surface sm:max-h-[75vh] sm:mx-4 sm:max-w-md">
         <div className="flex items-center justify-between border-b border-hairline px-5 py-4">
           <h2 className="text-sm font-semibold text-ink">Alarm Schedule</h2>
-          <button onClick={onClose} className="btn-ghost p-1">
-            <X className="h-4 w-4" strokeWidth={1.5} />
-          </button>
+          <div className="flex items-center gap-3">
+            <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted">
+              <div
+                onClick={() => setMasterEnabled(!masterEnabled)}
+                className={`relative h-4 w-7 rounded-full transition-colors ${
+                  masterEnabled ? "bg-accent" : "bg-hairline-strong"
+                }`}
+              >
+                <div
+                  className={`absolute left-0.5 top-0.5 h-3 w-3 rounded-full bg-white transition-transform ${
+                    masterEnabled ? "translate-x-3" : "translate-x-0"
+                  }`}
+                />
+              </div>
+              {masterEnabled ? "Active" : "Disabled"}
+            </label>
+            <button onClick={onClose} className="btn-ghost p-1">
+              <X className="h-4 w-4" strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4">

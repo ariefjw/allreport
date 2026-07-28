@@ -7,7 +7,6 @@ import type { NavItem } from "@/types";
 import { logoutAction } from "@/app/login/actions";
 import { useRealtimeClock } from "@/hooks/useRealtimeClock";
 import { useAlarmContext } from "@/components/providers/AlarmProvider";
-import { AlarmPanel } from "@/components/ui/AlarmPanel";
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/critical-jobs", label: "Critical Jobs", shortLabel: "Critical", icon: "critical" },
@@ -49,7 +48,7 @@ function NavTab({ item }: { item: NavItem }) {
 
 export function TopNav() {
   const { timeStr } = useRealtimeClock();
-  const { ringing, showPanel, setShowPanel } = useAlarmContext();
+  const { ringing, showPanel, setShowPanel, masterEnabled } = useAlarmContext();
 
   return (
     <header className="sticky top-0 z-50 border-b border-hairline bg-canvas/80 backdrop-blur-lg">
@@ -77,11 +76,11 @@ export function TopNav() {
           <button
             onClick={() => setShowPanel(!showPanel)}
             className={`btn-ghost relative gap-1 px-1.5 py-1.5 sm:px-2 ${
-              ringing ? "text-accent" : ""
+              ringing ? "text-accent" : masterEnabled ? "text-muted" : "text-hairline-strong"
             }`}
             aria-label="Alarms"
           >
-            <Bell className="h-3.5 w-3.5" strokeWidth={ringing ? 2 : 1.5} />
+            <Bell className="h-3.5 w-3.5" strokeWidth={ringing ? 2 : masterEnabled ? 1.5 : 1} />
             {ringing && (
               <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
@@ -104,7 +103,6 @@ export function TopNav() {
           </form>
         </div>
       </div>
-      {showPanel && <AlarmPanel onClose={() => setShowPanel(false)} />}
     </header>
   );
 }
