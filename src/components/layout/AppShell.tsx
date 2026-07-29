@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-canvas">
       <TopNav />
-      <main className="pb-16 md:pb-0">{children}</main>
+      <main className="pb-24 md:pb-0">{children}</main>
     </div>
   );
 }

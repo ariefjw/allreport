@@ -15,7 +15,6 @@ import {
 import { getTodayDisplay, isTimeReached } from "@/lib/utils";
 import { Upload } from "lucide-react";
 import { ImportModal } from "@/components/ui/ImportModal";
-import { SkeletonCard } from "@/components/ui/Skeleton";
 import type { DailyIntradayLog } from "@/types";
 
 function shiftToWIB(timestamp: string | null): string | null {

@@ -41,7 +41,7 @@ const AlarmContext = createContext<AlarmContextValue>({
 });
 
 export function AlarmProvider({ children }: { children: React.ReactNode }) {
-  const { timeStr, hours, minutes, seconds } = useRealtimeClock();
+  const { timeStr } = useRealtimeClock();
   const { alarms, loading, refresh, create, update, remove } = useAlarms();
   const [activeAlarms, setActiveAlarms] = useState<{ label: string; id: string }[]>([]);
   const [showPanel, setShowPanel] = useState(false);

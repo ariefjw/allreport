@@ -31,19 +31,20 @@ describe("intraday report generators", () => {
     ];
 
     const now = new Date("2026-07-14T10:00:00+07:00");
-    const originalDate = Date;
-    global.Date = class extends originalDate {
-      constructor(...args: ConstructorParameters<typeof originalDate>) {
+    const FixedDate = class extends Date {
+      constructor(...args: unknown[]) {
         if (args.length === 0) {
           super(now.getTime());
         } else {
-          super(...args);
+          super(args[0] as number | string, ...(args.slice(1) as []));
         }
       }
       static now() {
         return now.getTime();
       }
-    } as typeof Date;
+    };
+
+    global.Date = FixedDate as unknown as typeof Date;
 
     try {
       const report = generateIntradayReportText(batches);
@@ -52,7 +53,7 @@ describe("intraday report generators", () => {
       assert.doesNotMatch(report, /batch 3/);
       assert.match(report, /cbs_mspayment_intraday/);
     } finally {
-      global.Date = originalDate;
+      global.Date = Date;
     }
   });
 

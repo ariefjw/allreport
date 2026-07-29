@@ -40,11 +40,11 @@ export function useErrorLogs(selectedDate?: string) {
     refresh().finally(() => setLoading(false));
   }, [isReady, isAuthenticated, refresh]);
 
-  // 3. ✨ INI BAGIAN REAL-TIME NYA ✨
+  // Subscribe to real-time INSERT events
   useEffect(() => {
     if (!isReady || !isAuthenticated) return;
 
-    // Mendengarkan setiap ada data (snippet) baru yang masuk ke tabel
+    // Listen for new snippet entries
     const channel = supabase
       .channel("error-snippets-realtime")
       .on(

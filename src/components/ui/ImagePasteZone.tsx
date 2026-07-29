@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { ImageIcon, Upload, X, ClipboardPaste } from "lucide-react";
+import { ImageIcon, Upload, X } from "lucide-react";
 
 interface ImagePasteZoneProps {
   preview: string | null;

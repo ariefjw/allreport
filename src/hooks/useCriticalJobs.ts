@@ -12,7 +12,6 @@ export function useCriticalJobs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 1. Deklarasikan Supabase di tingkat atas agar dikenali oleh semua fungsi di dalam hook ini
   const supabase = useMemo(() => createClient(), []);
 
   const fetchJobs = useCallback(async () => {
@@ -87,7 +86,10 @@ export function useCriticalJobs() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ endTime }),
       });
-      if (!res.ok) throw new Error("Failed to update end time");
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => "Unknown error");
+        throw new Error(`Failed to update end time: ${errBody}`);
+      }
       const updated = await res.json();
       setJobs((prev) => prev.map((j) => (j.id === id ? updated : j)));
     },
@@ -138,7 +140,6 @@ export function useCriticalJobs() {
     []
   );
 
-  // 2. Fungsi resetJob yang sudah dirapikan
   const resetJob = useCallback(async (id: string) => {
     try {
       const res = await fetch(`/api/critical-jobs/${id}`, {
@@ -150,10 +151,9 @@ export function useCriticalJobs() {
       const updated = await res.json();
       setJobs((prev) => prev.map((j) => (j.id === id ? updated : j)));
     } catch (err) {
-      console.error("Gagal reset job:", err);
+      console.error("Failed to reset job:", err);
     }
   }, []);
 
-  // 4. Return sudah dibersihkan dari duplikasi
   return { jobs, loading, error, updateEndTime, markFailed, refresh, bulkImportEndTimes, resetJob };
 }

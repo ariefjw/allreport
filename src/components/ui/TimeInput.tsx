@@ -24,7 +24,7 @@ export function TimeInput({
   });
   const [focused, setFocused] = useState(false);
 
-  // KUNCI JAWABAN 1: Sinkronisasi state internal saat nilai dari DB (WIB) masuk
+  // Sync internal state when value prop changes
   useEffect(() => {
     if (value) {
       setDigits(value.replace(/:/g, ""));
