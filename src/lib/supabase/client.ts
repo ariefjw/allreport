@@ -1,5 +1,12 @@
 import { createBrowserClient } from "@supabase/ssr";
 
+function assertEnv(value: string | undefined, name: string): string {
+  if (!value) {
+    throw new Error(`Missing ${name}. Check your .env.local file.`);
+  }
+  return value;
+}
+
 function assertBrowserKey(key: string | undefined): string {
   if (!key) {
     throw new Error(
@@ -20,7 +27,7 @@ function assertBrowserKey(key: string | undefined): string {
 
 export function createClient() {
   return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    assertEnv(process.env.NEXT_PUBLIC_SUPABASE_URL, "NEXT_PUBLIC_SUPABASE_URL"),
     assertBrowserKey(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
   );
 }

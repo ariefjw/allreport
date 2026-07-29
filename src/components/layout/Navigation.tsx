@@ -55,9 +55,13 @@ export function TopNav() {
       <div className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2 sm:gap-6">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10">
-              <Zap className="h-3.5 w-3.5 text-accent" strokeWidth={2} />
-            </div>
+            <img
+              src="/logo-monitoring.png"
+              alt="Job Track"
+              width={28}
+              height={28}
+              className="rounded-lg object-contain"
+            />
             <p className="text-sm font-semibold text-ink max-sm:hidden">Job Track</p>
           </div>
           <nav className="flex items-center gap-1">

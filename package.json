@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx --test src/lib/intraday-schedule.test.ts src/lib/report-generators/intraday.test.ts src/lib/report-generators/critical.test.ts src/lib/report-generators/error.test.ts",
+    "test": "tsx --test src/lib/intraday-schedule.test.ts src/lib/report-generators/intraday.test.ts src/lib/report-generators/critical.test.ts src/lib/services/__tests__/critical-jobs.test.ts",
     "test:db": "tsx scripts/test-db-integration.ts"
   },
   "dependencies": {

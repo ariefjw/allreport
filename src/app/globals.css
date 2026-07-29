@@ -26,6 +26,9 @@
   --color-glow-blue: rgba(59, 130, 246, 0.125);
   --color-glow-red: rgba(239, 68, 68, 0.15);
 
+  --shadow-destructive: 0 0 10px rgba(239, 68, 68, 0.3);
+  --shadow-destructive-sm: 0 0 8px rgba(239, 68, 68, 0.25);
+
   --font-sans: var(--font-fira-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-fira-code), ui-monospace, monospace;
 }

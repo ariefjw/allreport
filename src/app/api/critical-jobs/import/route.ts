@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth, handleApiError } from "@/lib/api/auth";
 
 type ImportPayload = {
   id: string; 
@@ -8,14 +8,8 @@ type ImportPayload = {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { supabase, user, response } = await requireAuth();
+    if (response) return response;
 
     let importData: ImportPayload;
     try {
@@ -61,10 +55,6 @@ export async function POST(request: Request) {
       })),
     });
   } catch (error) {
-    console.error("Unhandled error in POST /api/critical-jobs/import:", error);
-    return NextResponse.json(
-      { error: "An unexpected server error occurred." },
-      { status: 500 },
-    );
+    return handleApiError(error);
   }
 }

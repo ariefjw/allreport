@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { ImagePasteZone } from "@/components/ui/ImagePasteZone";
 import { getTodayDisplay } from "@/lib/utils";
+import { WIB } from "@/lib/operational-date";
 import { ClipboardPaste } from "lucide-react";
 import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 
@@ -297,7 +298,7 @@ export function ErrorLogsPage() {
                           </p>
                           <p className="text-[10px] text-muted">
                             {new Date(log.createdAt).toLocaleTimeString("en-ID", {
-                              timeZone: "Asia/Jakarta",
+                              timeZone: WIB,
                               hour: "2-digit",
                               minute: "2-digit",
                             })}

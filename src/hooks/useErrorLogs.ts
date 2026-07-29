@@ -54,9 +54,8 @@ export function useErrorLogs(selectedDate?: string) {
           schema: "public",
           table: "daily_error_log", // GANTI dengan nama tabel error log Anda di Supabase!
         },
-        (payload) => {
-          console.log("Snippet baru terdeteksi dari user lain!", payload);
-          refresh(); // Langsung perbarui layar secara otomatis
+        () => {
+          refresh();
         }
       )
       .subscribe();
@@ -88,15 +87,6 @@ export function useErrorLogs(selectedDate?: string) {
   await refresh();
 }, [refresh]);
 
-  // Tambahkan di dalam useErrorLogs()
-const broadcastSnippet = useCallback((text: string) => {
-  supabase.channel('snippet-room').send({
-    type: 'broadcast',
-    event: 'snippet-update',
-    payload: { text },
-  });
-}, [supabase]);
-
   const deleteLog = useCallback(async (id: string, screenshotUrl: string | null) => {
     const params = new URLSearchParams({ id });
     if (screenshotUrl) params.set("screenshotUrl", screenshotUrl);
@@ -113,5 +103,5 @@ const broadcastSnippet = useCallback((text: string) => {
     await Promise.all(items.map((item) => deleteLog(item.id, item.screenshotUrl)));
   }, [deleteLog]);
 
-  return { logs, loading, error, createLog, refresh, broadcastSnippet, deleteLog, deleteMultipleLogs };
+  return { logs, loading, error, createLog, refresh, deleteLog, deleteMultipleLogs };
 }

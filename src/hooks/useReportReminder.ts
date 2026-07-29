@@ -2,10 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import type { DailyMonitoringLog } from "@/types";
+import { WIB } from "@/lib/operational-date";
 
 function getWIBTime(): { hours: number } {
   const now = new Date();
-  const wib = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+  const wib = new Date(now.toLocaleString("en-US", { timeZone: WIB }));
   return { hours: wib.getHours() };
 }
 

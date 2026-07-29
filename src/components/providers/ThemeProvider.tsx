@@ -44,6 +44,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useTheme() {
+function useTheme() {
   return useContext(ThemeContext);
 }

@@ -10,9 +10,9 @@ interface PageHeaderProps {
 }
 
 const GLOW_MAP = {
-  amber: "bg-[radial-gradient(ellipse_80%_40%_at_50%_-20%,rgba(245,158,11,0.15),transparent)]",
-  blue: "bg-[radial-gradient(ellipse_80%_40%_at_50%_-20%,rgba(59,130,246,0.125),transparent)]",
-  red: "bg-[radial-gradient(ellipse_80%_40%_at_50%_-20%,rgba(239,68,68,0.15),transparent)]",
+  amber: "bg-[radial-gradient(ellipse_80%_40%_at_50%_-20%,var(--color-glow-amber),transparent)]",
+  blue: "bg-[radial-gradient(ellipse_80%_40%_at_50%_-20%,var(--color-glow-blue),transparent)]",
+  red: "bg-[radial-gradient(ellipse_80%_40%_at_50%_-20%,var(--color-glow-red),transparent)]",
 };
 
 export function PageHeader({ title, description, date, actions, mobileActions, glow }: PageHeaderProps) {

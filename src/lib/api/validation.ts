@@ -9,11 +9,6 @@ export const patchIntradayJobSchema = z.object({
   finishedTime: z.string().nullable().optional(),
 });
 
-export const createErrorLogSchema = z.object({
-  errorTitle: z.string().optional(),
-  errorTextLog: z.string().optional(),
-});
-
 export const createAlarmSchema = z.object({
   alarmTime: z.string().regex(/^\d{2}:\d{2}:\d{2}$/),
   label: z.string().optional(),

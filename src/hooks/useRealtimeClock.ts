@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { WIB } from "@/lib/operational-date";
 
 export function useRealtimeClock() {
   const [now, setNow] = useState<Date | null>(null);
@@ -15,14 +16,18 @@ export function useRealtimeClock() {
     return { timeStr: "", hours: 0, minutes: 0, seconds: 0 };
   }
 
-  const h = now.getHours().toString().padStart(2, "0");
-  const m = now.getMinutes().toString().padStart(2, "0");
-  const s = now.getSeconds().toString().padStart(2, "0");
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: WIB,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const timeStr = fmt.format(now);
+  const [hStr, mStr, sStr] = timeStr.split(":");
+  const hours = parseInt(hStr, 10);
+  const minutes = parseInt(mStr, 10);
+  const seconds = parseInt(sStr, 10);
 
-  return {
-    timeStr: `${h}:${m}:${s}`,
-    hours: now.getHours(),
-    minutes: now.getMinutes(),
-    seconds: now.getSeconds(),
-  };
+  return { timeStr, hours, minutes, seconds };
 }

@@ -35,7 +35,7 @@ const ITEMS = [
     dot: "bg-status-failed",
     text: "text-status-failed",
     pulse: false,
-    glow: "shadow-[0_0_8px_rgba(239,68,68,0.25)]",
+    glow: "shadow-destructive-sm",
   },
 ];
 

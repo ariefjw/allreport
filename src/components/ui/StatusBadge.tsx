@@ -24,7 +24,7 @@ const STATUS_CONFIG: Record<
     label: "Failed",
     dot: "bg-status-failed",
     text: "text-status-failed",
-    glow: "shadow-[0_0_10px_rgba(239,68,68,0.30)]",
+    glow: "shadow-destructive",
   },
 };
 

@@ -21,6 +21,7 @@ const firaCode = Fira_Code({
 export const metadata: Metadata = {
   title: "Job Track Central",
   description: "Automated Job Monitoring & Reporting Application",
+  icons: [{ rel: "icon", url: "/logo-monitoring.png" }],
 };
 
 export default function RootLayout({

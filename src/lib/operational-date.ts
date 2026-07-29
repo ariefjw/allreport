@@ -1,5 +1,5 @@
-const WIB = "Asia/Jakarta";
-const WIB_OFFSET = "+07:00";
+export const WIB = "Asia/Jakarta";
+export const WIB_OFFSET = "+07:00";
 
 export function getOperationalTimezone(): string {
   return (

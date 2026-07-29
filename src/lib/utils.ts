@@ -11,13 +11,6 @@ export function formatTimeHM(date: Date): string {
   return `${h}:${m}`;
 }
 
-export function formatTimeHMS(date: Date): string {
-  const h = date.getHours().toString().padStart(2, "0");
-  const m = date.getMinutes().toString().padStart(2, "0");
-  const s = date.getSeconds().toString().padStart(2, "0");
-  return `${h}:${m}:${s}`;
-}
-
 export function parseTimeString(time: string): { hours: number; minutes: number; seconds: number } {
   const parts = time.split(":");
   return {
@@ -25,13 +18,6 @@ export function parseTimeString(time: string): { hours: number; minutes: number;
     minutes: parseInt(parts[1] ?? "0", 10),
     seconds: parseInt(parts[2] ?? "0", 10),
   };
-}
-
-export function timeStringToDate(baseDate: Date, time: string): Date {
-  const { hours, minutes, seconds } = parseTimeString(time);
-  const result = new Date(baseDate);
-  result.setHours(hours, minutes, seconds, 0);
-  return result;
 }
 
 export function hhmmssToTimeString(digits: string): string | null {
@@ -68,19 +54,6 @@ export function isTimeReached(startTime: string, now: Date = new Date()): boolea
   const startMinutes = hours * 60 + minutes;
   return nowMinutes >= startMinutes;
 }
-
-export async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-import { getOperationalDate as getOpDate } from "@/lib/operational-date";
-
-export { getOpDate as getOperationalDate };
 
 export function getTodayDisplay(): string {
   return formatDateReport(new Date());

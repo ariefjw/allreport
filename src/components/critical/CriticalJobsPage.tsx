@@ -112,7 +112,7 @@ export function CriticalJobsPage() {
       });
 
       if (payload.length === 0) {
-        alert("Tidak ada nama job DONE dengan format jam yang cocok terdeteksi.");
+        alert("No completed job names with matching time format detected.");
         return;
       }
 
@@ -120,7 +120,7 @@ export function CriticalJobsPage() {
       setIsImportModalOpen(false);
     } catch (err) {
       console.error("Gagal import:", err);
-      alert(err instanceof Error ? err.message : "Gagal menyimpan import");
+      alert(err instanceof Error ? err.message : "Failed to save import");
     }
   };
 
