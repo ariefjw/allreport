@@ -13,10 +13,10 @@ interface JobGroupProps {
 }
 
 const STATUS_ACCENT: Record<string, { strip: string; countBg: string }> = {
-  "*FAILED*": { strip: "bg-[rgba(239,68,68,0.3)]", countBg: "bg-status-failed/15 text-status-failed" },
-  "*RUNNING*": { strip: "bg-[rgba(245,158,11,0.3)]", countBg: "bg-status-running/15 text-status-running" },
-  "*DONE*": { strip: "bg-[rgba(34,197,94,0.3)]", countBg: "bg-status-done/15 text-status-done" },
-  "*WAITING*": { strip: "bg-[rgba(99,99,104,0.3)]", countBg: "bg-status-waiting/15 text-status-waiting" },
+  "*FAILED*": { strip: "bg-status-failed/30", countBg: "bg-status-failed/15 text-status-failed" },
+  "*RUNNING*": { strip: "bg-status-running/30", countBg: "bg-status-running/15 text-status-running" },
+  "*DONE*": { strip: "bg-status-done/30", countBg: "bg-status-done/15 text-status-done" },
+  "*WAITING*": { strip: "bg-status-waiting/30", countBg: "bg-status-waiting/15 text-status-waiting" },
 };
 
 export function JobGroup({ title, count, defaultExpanded = false, children, status }: JobGroupProps) {

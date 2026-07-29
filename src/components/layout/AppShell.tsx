@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { TopNav, MobileThemeBar } from "./Navigation";
+import { TopNav } from "./Navigation";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -27,7 +27,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-canvas">
       <TopNav />
-      <MobileThemeBar />
       <main className="pb-16 md:pb-0">{children}</main>
     </div>
   );

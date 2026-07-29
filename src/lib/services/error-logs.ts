@@ -16,6 +16,7 @@ export async function getErrorLogs(supabase: SupabaseClient, date?: string) {
 
 export async function createErrorLog(
   supabase: SupabaseClient,
+  userId: string | undefined,
   input: {
     errorTitle?: string;
     errorTextLog?: string;
@@ -44,14 +45,17 @@ export async function createErrorLog(
     screenshotUrl = publicUrl.publicUrl;
   }
 
+  const insertPayload: Record<string, unknown> = {
+    operational_date: getOperationalDate(),
+    error_title: input.errorTitle ?? "Screenshot",
+    error_text_log: input.errorTextLog ?? "",
+    screenshot_url: screenshotUrl,
+  };
+  if (userId) insertPayload.user_id = userId;
+
   const { data, error } = await supabase
     .from("daily_error_log")
-    .insert({
-      operational_date: getOperationalDate(),
-      error_title: input.errorTitle ?? "Screenshot",
-      error_text_log: input.errorTextLog ?? "",
-      screenshot_url: screenshotUrl,
-    })
+    .insert(insertPayload)
     .select()
     .single();
 

@@ -6,6 +6,7 @@ import {
   resetCriticalJob,
 } from "@/lib/services/critical-jobs";
 import { mapCriticalLog } from "@/lib/db/mappers";
+import { patchCriticalJobSchema } from "@/lib/api/validation";
 
 export async function PATCH(
   request: NextRequest,
@@ -16,7 +17,7 @@ export async function PATCH(
     if (response) return response;
 
     const { id } = await params;
-    const body = await request.json();
+    const body = patchCriticalJobSchema.parse(await request.json());
 
     if (body.action === "mark_failed") {
       const row = await markCriticalJobFailed(supabase!, id);

@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DbDailyIntradayLog, DbMasterIntradayBatch } from "@/lib/db/types";
 import { getOperationalDate, combineOperationalDateWithTime } from "@/lib/operational-date";
 
-export async function ensureIntradayDailyLogs(supabase: SupabaseClient) {
+export async function ensureIntradayDailyLogs(supabase: SupabaseClient, userId?: string) {
   const operationalDate = getOperationalDate();
 
   const { count } = await supabase
@@ -25,14 +25,15 @@ export async function ensureIntradayDailyLogs(supabase: SupabaseClient) {
     batch_id: batch.id,
     batch_number: batch.batch_number,
     started_time: batch.default_started_time,
+    ...(userId ? { user_id: userId } : {}),
   }));
 
   const { error } = await supabase.from("daily_intraday_log").insert(rows);
   if (error) throw error;
 }
 
-export async function getIntradayJobs(supabase: SupabaseClient) {
-  await ensureIntradayDailyLogs(supabase);
+export async function getIntradayJobs(supabase: SupabaseClient, userId?: string) {
+  await ensureIntradayDailyLogs(supabase, userId);
 
   const operationalDate = getOperationalDate();
   const { data, error } = await supabase

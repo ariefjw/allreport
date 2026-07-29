@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, handleApiError } from "@/lib/api/auth";
 import { updateAlarm, deleteAlarm } from "@/lib/services/alarms";
+import { patchAlarmSchema } from "@/lib/api/validation";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -8,7 +9,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (response) return response;
 
     const { id } = await params;
-    const body = await request.json();
+    const body = patchAlarmSchema.parse(await request.json());
     const alarm = await updateAlarm(supabase!, id, body);
     return NextResponse.json(alarm);
   } catch (error) {

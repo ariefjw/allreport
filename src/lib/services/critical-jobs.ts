@@ -6,7 +6,7 @@ import {
   combineScheduledDateWithTime,
 } from "@/lib/operational-date";
 
-export async function ensureCriticalDailyLogs(supabase: SupabaseClient) {
+export async function ensureCriticalDailyLogs(supabase: SupabaseClient, userId?: string) {
   const operationalDate = getCriticalOperationalDate();
 
   const { count } = await supabase
@@ -34,6 +34,7 @@ export async function ensureCriticalDailyLogs(supabase: SupabaseClient) {
       job.is_cross_day
     ),
     status: "*WAITING*",
+    ...(userId ? { user_id: userId } : {}),
   }));
 
   const { error } = await supabase.from("daily_monitoring_log").insert(rows);
@@ -54,8 +55,8 @@ export async function syncCriticalRunningStatus(supabase: SupabaseClient) {
   if (error) throw error;
 }
 
-export async function getCriticalJobs(supabase: SupabaseClient) {
-  await ensureCriticalDailyLogs(supabase);
+export async function getCriticalJobs(supabase: SupabaseClient, userId?: string) {
+  await ensureCriticalDailyLogs(supabase, userId);
   await syncCriticalRunningStatus(supabase);
 
   const operationalDate = getCriticalOperationalDate();

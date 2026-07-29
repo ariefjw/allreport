@@ -114,7 +114,7 @@ async function main() {
   console.log(`   OK — ${criticalRows.length} critical jobs, report generated`);
 
   console.log("6. Testing error log save + report...");
-  const created = await createErrorLog(supabase, {
+  const created = await createErrorLog(supabase, undefined, {
     errorTitle: `[TEST] Integration ${Date.now()}`,
     errorTextLog: "Automated integration test entry — safe to delete",
     screenshotFile: null,

@@ -4,10 +4,10 @@ import { ensureCriticalDailyLogs, syncCriticalRunningStatus } from "@/lib/servic
 
 export async function GET() {
   try {
-    const { supabase, response } = await requireAuth();
+    const { supabase, user, response } = await requireAuth();
     if (response) return response;
 
-    await ensureCriticalDailyLogs(supabase!);
+    await ensureCriticalDailyLogs(supabase!, user!.id);
     await syncCriticalRunningStatus(supabase!);
 
     return NextResponse.json({ synced: true });

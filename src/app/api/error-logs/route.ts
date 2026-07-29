@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { supabase, response } = await requireAuth();
+    const { supabase, user, response } = await requireAuth();
     if (response) return response;
 
     const formData = await request.formData();
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const errorTextLog = formData.get("errorTextLog") as string | null;
     const screenshot = formData.get("screenshot") as File | null;
 
-    const row = await createErrorLog(supabase!, {
+    const row = await createErrorLog(supabase!, user!.id, {
       errorTitle: errorTitle?.trim() || undefined,
       errorTextLog: errorTextLog?.trim() || undefined,
       screenshotFile: screenshot && screenshot.size > 0 ? screenshot : null,

@@ -71,20 +71,15 @@ export function useIntradayJobs() {
   const updateFinishedTime = useCallback(
     async (id: string, finishedTime: string | null) => {
       const url = `/api/intraday-jobs/${id}`;
-      console.log("[DEBUG] PATCH url:", url, "body:", { finishedTime });
       const res = await fetch(url, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ finishedTime }),
       });
-      console.log("[DEBUG] PATCH response status:", res.status);
       if (!res.ok) {
-        const errBody = await res.text();
-        console.error("[DEBUG] PATCH error body:", errBody);
         throw new Error("Failed to update finished time");
       }
       const updated = await res.json();
-      console.log("[DEBUG] PATCH updated data:", JSON.stringify(updated));
       setBatches((prev) => prev.map((b) => (b.id === id ? updated : b)));
     },
     []

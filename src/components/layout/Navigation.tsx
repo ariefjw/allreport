@@ -106,7 +106,3 @@ export function TopNav() {
     </header>
   );
 }
-
-export function MobileThemeBar() {
-  return null;
-}

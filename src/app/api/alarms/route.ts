@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, handleApiError } from "@/lib/api/auth";
 import { getAlarms, createAlarm } from "@/lib/services/alarms";
+import { createAlarmSchema } from "@/lib/api/validation";
 
 export async function GET() {
   try {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     const { supabase, user, response } = await requireAuth();
     if (response) return response;
 
-    const body = await request.json();
+    const body = createAlarmSchema.parse(await request.json());
     const alarm = await createAlarm(supabase!, user!.id, {
       alarmTime: body.alarmTime,
       label: body.label ?? "",

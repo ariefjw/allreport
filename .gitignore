@@ -29,6 +29,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# sql migrations (run manually in Supabase dashboard)
+scripts/*.sql
+
 # env files
 .env*.local
 .env

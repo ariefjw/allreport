@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, handleApiError } from "@/lib/api/auth";
 import { updateIntradayFinishedTime } from "@/lib/services/intraday-jobs";
 import { mapIntradayLog } from "@/lib/db/mappers";
+import { patchIntradayJobSchema } from "@/lib/api/validation";
 
 export async function PATCH(
   request: NextRequest,
@@ -12,7 +13,7 @@ export async function PATCH(
     if (response) return response;
 
     const { id } = await params;
-    const body = await request.json();
+    const body = patchIntradayJobSchema.parse(await request.json());
 
     const row = await updateIntradayFinishedTime(
       supabase!,
