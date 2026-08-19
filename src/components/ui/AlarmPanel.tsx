@@ -57,10 +57,10 @@ export function AlarmPanel({ onClose }: AlarmPanelProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 flex max-h-[65vh] w-full flex-col rounded-2xl bg-surface sm:max-h-[75vh] sm:mx-4 sm:max-w-md">
+      <div className="fixed inset-0 bg-mask backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 flex max-h-[65vh] w-full flex-col rounded-xl bg-surface sm:max-h-[75vh] sm:mx-4 sm:max-w-md">
         <div className="flex items-center justify-between border-b border-hairline px-5 py-4">
-          <h2 className="text-sm font-semibold text-ink">Alarm Schedule</h2>
+          <h2 className="serif-headline text-lg text-ink">Alarm Schedule</h2>
           <div className="flex items-center gap-3">
             <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted">
               <div
@@ -77,7 +77,7 @@ export function AlarmPanel({ onClose }: AlarmPanelProps) {
               </div>
               {masterEnabled ? "Active" : "Disabled"}
             </label>
-            <button onClick={onClose} className="btn-ghost p-1">
+            <button onClick={onClose} className="icon-btn -mr-1">
               <X className="h-4 w-4" strokeWidth={1.5} />
             </button>
           </div>
@@ -94,7 +94,7 @@ export function AlarmPanel({ onClose }: AlarmPanelProps) {
                 <div
                   key={alarm.id}
                   className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm transition-colors ${
-                    alarm.enabled ? "border-hairline-strong bg-surface-elevated" : "border-hairline bg-surface opacity-50"
+                    alarm.enabled ? "border-hairline-strong bg-surface-elevated" : "border-hairline-soft bg-surface opacity-50"
                   }`}
                 >
                   <button onClick={() => handleToggle(alarm)} className="shrink-0 text-muted hover:text-ink">
@@ -107,13 +107,13 @@ export function AlarmPanel({ onClose }: AlarmPanelProps) {
                     </div>
                     <div className="mt-0.5 flex gap-1">
                       {bitmaskToDays(alarm.daysOfWeek).map((d) => (
-                        <span key={d} className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-muted">
+                        <span key={d} className="rounded bg-surface-hover px-1.5 py-0.5 text-xs text-muted">
                           {d}
                         </span>
                       ))}
                     </div>
                   </div>
-                  <button onClick={() => handleDelete(alarm.id)} className="shrink-0 text-muted hover:text-destructive">
+                  <button onClick={() => handleDelete(alarm.id)} className="icon-btn h-8 w-8 text-muted hover:text-destructive">
                     <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
                   </button>
                 </div>

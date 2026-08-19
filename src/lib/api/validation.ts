@@ -7,6 +7,7 @@ export const patchCriticalJobSchema = z.object({
 
 export const patchIntradayJobSchema = z.object({
   finishedTime: z.string().nullable().optional(),
+  startedTime: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).optional(),
 });
 
 export const createAlarmSchema = z.object({

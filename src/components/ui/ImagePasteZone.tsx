@@ -101,7 +101,7 @@ export function ImagePasteZone({ preview, onImageChange }: ImagePasteZoneProps) 
           <button
             type="button"
             onClick={handleRemove}
-            className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-destructive text-white shadow-md hover:bg-destructive/90"
+            className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-destructive text-white hover:bg-destructive/90"
           >
             <X className="h-4 w-4" strokeWidth={2} />
           </button>

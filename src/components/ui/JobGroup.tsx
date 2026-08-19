@@ -29,14 +29,14 @@ export function JobGroup({ title, count, defaultExpanded = false, children, stat
     <div id={`group-${status}`} className="card overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition-all duration-150 hover:bg-white/[0.02]"
+        className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition-all duration-150 row-hover"
       >
         <ChevronDown
           className={`h-4 w-4 text-muted transition-transform duration-200 ${expanded ? "rotate-0" : "-rotate-90"}`}
           strokeWidth={2}
         />
         <span className="text-sm font-semibold text-ink">{title}</span>
-        <span className={`ml-auto inline-flex min-w-[24px] items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold leading-none ${accent.countBg}`}>
+        <span className={`ml-auto badge-count ${accent.countBg}`}>
           {count}
         </span>
       </button>
@@ -46,7 +46,7 @@ export function JobGroup({ title, count, defaultExpanded = false, children, stat
         }`}
       >
         <div className="overflow-hidden">
-          <div className="divide-y divide-hairline">{children}</div>
+          <div className="divide-y divide-hairline-soft">{children}</div>
         </div>
       </div>
     </div>

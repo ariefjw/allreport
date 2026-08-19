@@ -49,7 +49,7 @@ export function ImportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-mask p-4 backdrop-blur-sm">
       <div className="card w-full max-w-lg">
         <div className="card-header flex items-center justify-between">
           <div>
@@ -73,7 +73,7 @@ export function ImportModal({
         <form onSubmit={handleSubmit}>
           <div className="card-body">
             <textarea
-              className="input h-64 resize-none font-mono text-sm"
+              className="input h-64 resize-none font-mono text-sm tabular-nums"
               placeholder={placeholder}
               value={text}
               onChange={(e) => setText(e.target.value)}

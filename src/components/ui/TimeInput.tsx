@@ -82,7 +82,7 @@ export function TimeInput({
         onBlur={handleBlur}
         disabled={disabled}
         placeholder={placeholder}
-        className="input px-3 py-2 text-center font-mono text-sm tracking-widest"
+        className="input rounded-md px-3 py-2 text-center font-mono text-sm tracking-widest"
         maxLength={8}
         autoComplete="off"
       />

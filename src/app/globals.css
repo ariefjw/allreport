@@ -1,36 +1,56 @@
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #020617;
-  --color-surface: #0E1223;
-  --color-surface-elevated: #1A1E2F;
+  /* ---------- Primitive tokens (raw values) ---------- */
+  --color-canvas: #05060a;
+  --color-surface: #0b0d12;
+  --color-surface-elevated: #13151c;
+  --color-surface-subtle: rgba(248, 250, 252, 0.03);
+  --color-surface-hover: rgba(248, 250, 252, 0.06);
 
-  --color-ink: #F8FAFC;
-  --color-body: rgba(248, 250, 252, 0.85);
-  --color-muted: #94A3B8;
+  --color-ink: #eef1f4;
+  --color-body: rgba(238, 241, 244, 0.86);
+  --color-muted: #9aa4b0;
 
-  --color-hairline: #1E293B;
-  --color-hairline-strong: #334155;
+  /* Translucent-white hairline language (editorial, replaces slate) */
+  --color-hairline: rgba(255, 255, 255, 0.06);
+  --color-hairline-strong: rgba(255, 255, 255, 0.12);
+  --color-hairline-soft: rgba(255, 255, 255, 0.04);
 
-  --color-accent: #22C55E;
-  --color-destructive: #EF4444;
-  --color-warning: #F59E0B;
-  --color-info: #0EA5E9;
+  --color-accent: #2ee06a;
+  --color-destructive: #ef5f5f;
+  --color-warning: #f5a623;
+  --color-info: #4aa8ff;
 
-  --color-status-waiting: #636368;
-  --color-status-running: #F59E0B;
-  --color-status-done: #22C55E;
-  --color-status-failed: #EF4444;
+  /* ---------- Semantic tokens (status core — names stay identical) ---------- */
+  --color-status-waiting: #6b7280;
+  --color-status-running: var(--color-warning);
+  --color-status-done: var(--color-accent);
+  --color-status-failed: var(--color-destructive);
 
-  --color-glow-amber: rgba(245, 158, 11, 0.15);
-  --color-glow-blue: rgba(59, 130, 246, 0.125);
-  --color-glow-red: rgba(239, 68, 68, 0.15);
+  --color-glow-amber: rgba(255, 151, 31, 0.22);
+  --color-glow-blue: rgba(74, 168, 255, 0.18);
+  --color-glow-red: rgba(239, 68, 68, 0.22);
 
+  /* ---------- Overlay token (replaces raw bg-black/40) ---------- */
+  --color-mask: rgba(2, 6, 23, 0.6);
+  --color-mask-strong: rgba(2, 6, 23, 0.72);
+
+  /* ---------- Elevation (no drop shadows — hairline + glow language) ---------- */
   --shadow-destructive: 0 0 10px rgba(239, 68, 68, 0.3);
   --shadow-destructive-sm: 0 0 8px rgba(239, 68, 68, 0.25);
+  --shadow-success: 0 0 8px rgba(34, 197, 94, 0.2);
 
+  /* ---------- Radius scale ---------- */
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+
+  /* ---------- Font ---------- */
   --font-sans: var(--font-fira-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-fira-code), ui-monospace, monospace;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
 }
 
 @layer base {
@@ -43,7 +63,7 @@
   }
 
   ::selection {
-    @apply bg-white/10 text-ink;
+    @apply bg-surface-hover text-ink;
   }
 }
 
@@ -54,6 +74,7 @@
 }
 
 @layer components {
+  /* ---------- Card ---------- */
   .card {
     @apply rounded-xl border border-hairline-strong bg-surface;
   }
@@ -66,23 +87,73 @@
     @apply px-5 py-4;
   }
 
+  /* ---------- Buttons (interactive language) ---------- */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-150 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none bg-accent text-white shadow-sm hover:bg-accent/90 focus:outline-none focus:ring-2 focus:ring-accent/30;
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium tracking-wide transition-all duration-150 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none bg-accent text-[#04120a] shadow-sm hover:bg-accent/90 focus:outline-none focus:ring-2 focus:ring-accent/30;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-150 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none bg-surface text-body ring-1 ring-hairline-strong hover:bg-surface-elevated hover:text-ink;
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium tracking-wide transition-all duration-150 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none bg-surface-elevated text-body ring-1 ring-hairline-strong hover:bg-surface-hover hover:text-ink focus:outline-none focus:ring-2 focus:ring-ink/15;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium tracking-wide transition-all duration-150 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none text-muted hover:bg-surface-elevated hover:text-ink;
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium tracking-wide transition-all duration-150 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none text-muted hover:bg-surface-hover hover:text-ink focus:outline-none focus:ring-2 focus:ring-ink/15;
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[13px] font-medium tracking-wide transition-all duration-150 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none bg-destructive text-white shadow-sm hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-destructive/30;
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium tracking-wide transition-all duration-150 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none bg-destructive text-white shadow-sm hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-destructive/30;
   }
 
+  /* ---------- Form input ---------- */
   .input {
-    @apply w-full rounded-lg border border-hairline-strong bg-surface px-4 py-2.5 text-sm text-ink transition-all placeholder:text-muted focus:border-ink/30 focus:outline-none focus:ring-2 focus:ring-white/10;
+    @apply w-full rounded-md border border-hairline-strong bg-surface px-4 py-2.5 text-sm text-ink transition-all placeholder:text-muted focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-ink/10;
+  }
+
+  /* ---------- Badge / chip (caption scale) ---------- */
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-hairline-strong bg-surface-elevated px-3 py-1 text-xs font-semibold leading-none;
+  }
+
+  .chip {
+    @apply rounded-md bg-surface text-muted ring-1 ring-hairline-strong hover:text-ink;
+  }
+
+  /* ---------- Row hover (table rhythm) ---------- */
+  .row-hover {
+    @apply hover:bg-surface-hover;
+  }
+
+  /* ---------- Status strip (section accent) ---------- */
+  .section-strip {
+    @apply w-0.5 shrink-0;
+  }
+
+  /* ---------- Display serif heading (editorial hero level) ---------- */
+  .serif-headline {
+    @apply font-serif font-medium tracking-[-0.03em] leading-tight;
+  }
+
+  /* ---------- KPI stat tiles ---------- */
+  .kpi-tile {
+    @apply flex items-center gap-3 rounded-xl border border-hairline-strong bg-surface px-4 py-3 transition-colors duration-150 hover:border-hairline-strong hover:bg-surface-elevated sm:flex-1;
+  }
+
+  .kpi-count {
+    @apply ml-auto font-mono text-xl font-semibold tabular-nums leading-none;
+  }
+
+  /* ---------- Count pill (tabular) ---------- */
+  .badge-count {
+    @apply inline-flex min-w-[22px] items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums leading-none;
+  }
+
+  /* ---------- Icon-only action button ---------- */
+  .icon-btn {
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/15;
+  }
+
+  /* ---------- Focus ring polish (dark canvas) ---------- */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-ink/15;
   }
 }

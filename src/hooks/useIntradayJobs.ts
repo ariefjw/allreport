@@ -85,8 +85,25 @@ export function useIntradayJobs() {
     []
   );
 
-  const bulkImportFinishedTimes = useCallback(
-    async (data: { id: string; finishedTime: string }[]) => {
+  const updateStartedTime = useCallback(
+    async (id: string, startedTime: string) => {
+      const url = `/api/intraday-jobs/${id}`;
+      const res = await fetch(url, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startedTime }),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to update start time");
+      }
+      const updated = await res.json();
+      setBatches((prev) => prev.map((b) => (b.id === id ? updated : b)));
+    },
+    []
+  );
+
+  const bulkImportBatches = useCallback(
+    async (data: { id: string; startedTime?: string; finishedTime?: string }[]) => {
       const res = await fetch("/api/intraday-jobs/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,10 +120,14 @@ export function useIntradayJobs() {
         setBatches((prev) =>
           prev.map((batch) => {
             const update = result.updates.find(
-              (u: { id: string; finishedTimestamp: string }) => u.id === batch.id
+              (u: { id: string; finishedTimestamp: string | null; startedTime?: string }) => u.id === batch.id
             );
             return update
-              ? { ...batch, finishedTimestamp: update.finishedTimestamp }
+              ? {
+                  ...batch,
+                  finishedTimestamp: update.finishedTimestamp,
+                  startedTime: update.startedTime ?? batch.startedTime,
+                }
               : batch;
           })
         );
@@ -117,5 +138,5 @@ export function useIntradayJobs() {
     []
   );
 
-  return { batches, loading, error, updateFinishedTime, bulkImportFinishedTimes, refresh };
+  return { batches, loading, error, updateFinishedTime, updateStartedTime, bulkImportBatches, refresh };
 }

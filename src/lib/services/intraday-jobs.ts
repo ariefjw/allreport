@@ -46,10 +46,14 @@ export async function getIntradayJobs(supabase: SupabaseClient, userId?: string)
   return data as DbDailyIntradayLog[];
 }
 
-export async function updateIntradayFinishedTime(
+function normalizeTime(time: string): string {
+  return time.length === 5 ? `${time}:00` : time;
+}
+
+export async function updateIntradayJob(
   supabase: SupabaseClient,
   id: string,
-  finishedTime: string | null
+  input: { finishedTime?: string | null; startedTime?: string }
 ) {
   const { data: existing, error: fetchError } = await supabase
     .from("daily_intraday_log")
@@ -59,16 +63,23 @@ export async function updateIntradayFinishedTime(
 
   if (fetchError) throw fetchError;
 
-  const finishedTimestamp = finishedTime
-    ? combineOperationalDateWithTime(existing.operational_date, finishedTime)
-    : null;
+  const updates: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.finishedTime !== undefined) {
+    updates.finished_timestamp = input.finishedTime
+      ? combineOperationalDateWithTime(existing.operational_date, input.finishedTime)
+      : null;
+  }
+
+  if (input.startedTime !== undefined) {
+    updates.started_time = normalizeTime(input.startedTime);
+  }
 
   const { data, error } = await supabase
     .from("daily_intraday_log")
-    .update({
-      finished_timestamp: finishedTimestamp,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updates)
     .eq("id", id)
     .select()
     .single();

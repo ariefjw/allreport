@@ -25,13 +25,13 @@ export function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-canvas px-4">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_80%_40%_at_50%_-20%,rgba(59,130,246,0.10),transparent)]" />
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_80%_40%_at_50%_-20%,var(--color-glow-blue),transparent)]" />
       <div className="card relative w-full max-w-sm p-8">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-ink/10">
             <Zap className="h-5 w-5 text-ink" strokeWidth={2} />
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-ink">Job Track Central</h1>
+          <h1 className="serif-headline text-2xl text-ink">Job Track Central</h1>
           <p className="mt-1 text-sm text-muted">Sign in to continue</p>
         </div>
 

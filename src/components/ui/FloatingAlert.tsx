@@ -40,10 +40,10 @@ export function FloatingAlert({ message, type = "failed", visible, persistent, o
   return (
     <>
       {persistent && (
-        <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm" />
+        <div className="fixed inset-0 z-40 bg-mask backdrop-blur-sm" />
       )}
       <div className={`fixed bottom-20 right-4 z-50 animate-in slide-in-from-right-2 md:bottom-6 ${persistent ? "left-4 md:left-auto" : ""}`}>
-        <div className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm shadow-lg backdrop-blur-sm ${TYPE_STYLES[type]}`}>
+        <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm backdrop-blur-sm ${TYPE_STYLES[type]}`}>
           {type === "alarm" ? (
             <Bell className="h-4 w-4 shrink-0 animate-pulse" strokeWidth={2} />
           ) : (

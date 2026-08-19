@@ -34,7 +34,7 @@ export function StatusBadge({ status }: { status: JobStatus }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border border-hairline-strong bg-surface-elevated px-3 py-1 text-xs font-semibold leading-none ${config.text} ${config.glow ?? ""}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border border-hairline-strong bg-surface-elevated px-3 py-1 text-xs font-semibold leading-none tracking-wide ${config.text} ${config.glow ?? ""}`}
     >
       <span className={dotClass} />
       {config.label}

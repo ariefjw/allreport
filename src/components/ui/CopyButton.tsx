@@ -30,7 +30,7 @@ export function CopyButton({ label, onCopy, variant = "primary" }: CopyButtonPro
   const base = variant === "primary" ? "btn-primary" : "btn-secondary";
 
   const copiedClasses = copied
-    ? "bg-emerald-600 text-white ring-0 shadow-lg shadow-emerald-600/20 hover:bg-emerald-600 dark:bg-emerald-500 dark:text-white"
+    ? "bg-status-done text-white ring-0 shadow-success hover:bg-status-done"
     : "";
 
   return (
@@ -38,7 +38,7 @@ export function CopyButton({ label, onCopy, variant = "primary" }: CopyButtonPro
       type="button"
       onClick={handleClick}
       disabled={loading}
-      className={`whitespace-nowrap ${base} ${copiedClasses}`}
+      className={`whitespace-nowrap ${base} ${copiedClasses} focus-visible:ring-accent/30`}
     >
       {copied ? (
         <Check className="h-4 w-4" strokeWidth={2} />

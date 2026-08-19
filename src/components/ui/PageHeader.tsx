@@ -20,14 +20,14 @@ export function PageHeader({ title, description, date, actions, mobileActions, g
     <>
       <div className={`border-b border-hairline ${glow ? GLOW_MAP[glow] : ""}`}>
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">{title}</h1>
+              <h1 className="serif-headline text-3xl text-ink sm:text-4xl">{title}</h1>
               {description && (
-                <p className="mt-1 text-sm text-muted">{description}</p>
+                <p className="mt-2 text-sm text-muted">{description}</p>
               )}
               {date && (
-                <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-hairline-strong bg-surface-elevated px-3 py-1 text-xs font-medium text-muted">
+                <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-hairline-strong bg-surface-elevated px-3 py-1 text-xs font-medium tabular-nums text-muted">
                   <CalendarDays className="h-3.5 w-3.5" strokeWidth={1.5} />
                   {date}
                 </div>

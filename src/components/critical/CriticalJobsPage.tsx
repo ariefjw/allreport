@@ -269,8 +269,8 @@ function JobRow({
   const canInputTime = isRunning || isDone;
 
   return (
-    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-white/[0.02]">
-      <span className="flex h-5 w-5 items-center justify-center rounded-md bg-surface-elevated text-[11px] font-medium tabular-nums text-muted">
+    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-3 px-5 py-3 text-sm transition-colors row-hover">
+      <span className="flex h-5 w-5 items-center justify-center rounded-md bg-surface-elevated text-xs font-medium tabular-nums text-muted">
         {displayNumber}
       </span>
       <span className="font-medium text-ink break-words pr-2">

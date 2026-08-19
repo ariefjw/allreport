@@ -13,7 +13,8 @@ import {
   generateIntradayFinishedTimeText,
 } from "@/lib/report-generators/intraday";
 import { getTodayDisplay, isTimeReached } from "@/lib/utils";
-import { Upload } from "lucide-react";
+import { parseIntradayReport } from "@/lib/intraday-import";
+import { Check, Pencil, Upload, X } from "lucide-react";
 import { ImportModal } from "@/components/ui/ImportModal";
 import type { DailyIntradayLog } from "@/types";
 
@@ -37,31 +38,6 @@ function getBatchStatus(batch: DailyIntradayLog, now: Date): string {
   return "waiting";
 }
 
-type ImportPayload = {
-  id: string;
-  finishedTime: string;
-}[];
-
-function parseIntradayReport(text: string, batches: DailyIntradayLog[]): ImportPayload {
-  const lines = text.split("\n");
-  const results: ImportPayload = [];
-  const batchMap = new Map(batches.map((b) => [b.batchNumber, b]));
-  const lineRegex = /-\s*batch\s*(\d+):.*finished\s*(\d{2}:\d{2})/;
-
-  for (const line of lines) {
-    const match = line.trim().match(lineRegex);
-    if (match) {
-      const batchNumber = parseInt(match[1], 10);
-      const finishedTime = match[2];
-      const batchData = batchMap.get(batchNumber);
-      if (batchData && !batchData.finishedTimestamp) {
-        results.push({ id: batchData.id, finishedTime: finishedTime });
-      }
-    }
-  }
-  return results;
-}
-
 const STATUS_CFG: Record<string, { label: string; short: string; dot: string; text: string }> = {
   active: { label: "Active", short: "RUN", dot: "bg-status-running", text: "text-status-running" },
   done: { label: "Done", short: "DONE", dot: "bg-status-done", text: "text-status-done" },
@@ -69,7 +45,7 @@ const STATUS_CFG: Record<string, { label: string; short: string; dot: string; te
 };
 
 export function IntradayJobsPage() {
-  const { batches, loading, error, updateFinishedTime, bulkImportFinishedTimes } = useIntradayJobs();
+  const { batches, loading, error, updateFinishedTime, updateStartedTime, bulkImportBatches } = useIntradayJobs();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -223,6 +199,7 @@ export function IntradayJobsPage() {
                   key={batch.id}
                   batch={batch}
                   onFinishedTimeChange={updateFinishedTime}
+                  onStartedTimeChange={updateStartedTime}
                 />
               ))}
             </JobGroup>
@@ -244,7 +221,7 @@ export function IntradayJobsPage() {
           if (payload.length === 0) {
             throw new Error("No new batch times found in the text to import, or they are already completed.");
           }
-          await bulkImportFinishedTimes(payload);
+          await bulkImportBatches(payload);
         }}
         title="Import Intraday Report"
         description="Paste the report text below. Only unfinished batches will be updated."
@@ -257,10 +234,14 @@ export function IntradayJobsPage() {
 function BatchRow({
   batch,
   onFinishedTimeChange,
+  onStartedTimeChange,
 }: {
   batch: DailyIntradayLog;
   onFinishedTimeChange: (id: string, time: string | null) => Promise<void>;
+  onStartedTimeChange: (id: string, time: string) => Promise<void>;
 }) {
+  const [editingStart, setEditingStart] = useState(false);
+  const [draftStartTime, setDraftStartTime] = useState<string | null>(batch.startedTime.substring(0, 8));
   const isDone = !!batch.finishedTimestamp;
   const isActive = !isDone && isTimeReached(batch.startedTime, new Date());
   const status = isDone ? "done" : isActive ? "active" : "waiting";
@@ -268,8 +249,18 @@ function BatchRow({
   const safeFinishedTimestamp = shiftToWIB(batch.finishedTimestamp);
   const startedDisplay = batch.startedTime.substring(0, 5);
 
+  useEffect(() => {
+    setDraftStartTime(batch.startedTime.substring(0, 8));
+  }, [batch.startedTime]);
+
+  const saveStartTime = async () => {
+    if (!draftStartTime) return;
+    await onStartedTimeChange(batch.id, draftStartTime);
+    setEditingStart(false);
+  };
+
   return (
-    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-white/[0.02]">
+    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-5 py-3 text-sm transition-colors row-hover">
       <span className={`flex h-6 w-6 items-center justify-center rounded-lg text-xs font-bold ${
         isDone
           ? "bg-status-done/15 text-status-done"
@@ -279,7 +270,31 @@ function BatchRow({
       }`}>
         {batch.batchNumber}
       </span>
-      <span className="text-xs tabular-nums text-muted whitespace-nowrap">{startedDisplay}</span>
+      <div className="flex min-w-0 items-center gap-1.5">
+        {editingStart ? (
+          <>
+            <div className="w-20 shrink-0 sm:w-24">
+              <TimeInput
+                value={draftStartTime}
+                onChange={(time) => setDraftStartTime(time)}
+              />
+            </div>
+            <button type="button" onClick={saveStartTime} className="text-status-done hover:text-status-done/80" aria-label="Save start time">
+              <Check className="h-3.5 w-3.5" strokeWidth={2} />
+            </button>
+            <button type="button" onClick={() => setEditingStart(false)} className="text-muted hover:text-ink" aria-label="Cancel start time edit">
+              <X className="h-3.5 w-3.5" strokeWidth={2} />
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="text-xs tabular-nums text-muted whitespace-nowrap">{startedDisplay}</span>
+            <button type="button" onClick={() => setEditingStart(true)} className="text-muted hover:text-ink" aria-label="Edit start time">
+              <Pencil className="h-3 w-3" strokeWidth={1.8} />
+            </button>
+          </>
+        )}
+      </div>
       <span className={`flex items-center gap-1.5 text-xs font-medium ${cfg.text}`}>
         <span className={`h-2 w-2 rounded-full ${cfg.dot} ${status === "active" ? "animate-pulse" : ""}`} />
         <span className="hidden sm:inline">{cfg.short}</span>
