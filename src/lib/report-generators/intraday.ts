@@ -1,6 +1,6 @@
 import type { DailyIntradayLog } from "@/types";
 import { formatDateReport, isTimeReached } from "@/lib/utils";
-import { INTRADAY_JOB_NAME } from "@/lib/mock-data";
+import { INTRADAY_JOB_NAME } from "@/lib/intraday-schedule";
 
 export function generateIntradayReportText(batches: DailyIntradayLog[]): string {
   const now = new Date();

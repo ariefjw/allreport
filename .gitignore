@@ -39,3 +39,11 @@ scripts/*.sql
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Non-build project planning docs
+PRD.md
+ROADMAP.md
+implementation_plan.md
+DESIGN.md
+.opencode/
+graphify-out/

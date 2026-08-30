@@ -7,7 +7,7 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { KpiBar } from "@/components/ui/KpiBar";
 import { JobGroup } from "@/components/ui/JobGroup";
 import { TimeInput } from "@/components/ui/TimeInput";
-import { INTRADAY_JOB_NAME } from "@/lib/mock-data";
+import { INTRADAY_JOB_NAME } from "@/lib/intraday-schedule";
 import {
   generateIntradayReportText,
   generateIntradayFinishedTimeText,

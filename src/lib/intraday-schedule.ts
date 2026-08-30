@@ -1,3 +1,5 @@
+export const INTRADAY_JOB_NAME = "cbs_mspayment_intraday";
+
 /** Intraday batches run every 30 minutes from 08:30 to 17:30 WIB. */
 export const INTRADAY_START = "08:30:00";
 export const INTRADAY_END = "17:30:00";
