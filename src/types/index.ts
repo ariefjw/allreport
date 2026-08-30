@@ -47,7 +47,7 @@ export interface NavItem {
   href: string;
   label: string;
   shortLabel: string;
-  icon: "critical" | "intraday" | "error";
+  icon: "critical" | "intraday" | "timesheet" | "error";
 }
 
 export interface AlarmSchedule {

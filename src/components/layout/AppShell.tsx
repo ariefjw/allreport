@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { TopNav } from "./Navigation";
+import { TopNav, BottomNav } from "./Navigation";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -27,7 +27,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-canvas">
       <TopNav />
-      <main className="pb-24 md:pb-0">{children}</main>
+      <main className="pb-[calc(7.5rem+env(safe-area-inset-bottom))] md:pb-0">{children}</main>
+      <BottomNav />
     </div>
   );
 }

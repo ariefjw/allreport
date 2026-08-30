@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Zap, Clock, AlertTriangle, Bell, LogOut } from "lucide-react";
+import { Zap, Clock, AlertTriangle, Bell, LogOut, FileSpreadsheet } from "lucide-react";
 import type { NavItem } from "@/types";
 import { logoutAction } from "@/app/login/actions";
 import { useRealtimeClock } from "@/hooks/useRealtimeClock";
@@ -11,12 +11,14 @@ import { useAlarmContext } from "@/components/providers/AlarmProvider";
 const NAV_ITEMS: NavItem[] = [
   { href: "/critical-jobs", label: "Critical Jobs", shortLabel: "Critical", icon: "critical" },
   { href: "/intraday-jobs", label: "Intraday Jobs", shortLabel: "Intraday", icon: "intraday" },
+  { href: "/timesheet", label: "Timesheet", shortLabel: "Timesheet", icon: "timesheet" },
   { href: "/error-logs", label: "Error Logs", shortLabel: "Errors", icon: "error" },
 ];
 
 const ICON_MAP = {
   critical: Zap,
   intraday: Clock,
+  timesheet: FileSpreadsheet,
   error: AlertTriangle,
 };
 
@@ -62,9 +64,9 @@ export function TopNav() {
               height={28}
               className="rounded-lg object-contain"
             />
-            <p className="text-sm font-semibold text-ink max-sm:hidden">Job Track</p>
+            <p className="text-sm font-semibold text-ink sm:block">Job Track</p>
           </div>
-          <nav className="flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-1">
             {NAV_ITEMS.map((item) => (
               <NavTab key={item.href} item={item} />
             ))}
@@ -72,7 +74,7 @@ export function TopNav() {
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
           {timeStr && (
-            <span className="hidden font-mono text-xs tabular-nums text-muted sm:inline">
+            <span className="font-mono text-xs tabular-nums text-muted">
               <span className="text-ink">{timeStr.slice(0, 5)}</span>
               <span className="text-muted/60">:{timeStr.slice(6, 8)}</span>
             </span>
@@ -108,5 +110,35 @@ export function TopNav() {
         </div>
       </div>
     </header>
+  );
+}
+
+export function BottomNav() {
+  const pathname = usePathname();
+  
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-14 items-center justify-around border-t border-hairline bg-canvas/90 pb-[env(safe-area-inset-bottom)] pt-1 backdrop-blur-lg md:hidden">
+      {NAV_ITEMS.map((item) => {
+        const isActive = pathname === item.href;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex w-full flex-col items-center gap-1 py-1.5 text-[10px] font-medium transition-colors ${
+              isActive ? "text-accent" : "text-muted hover:text-body"
+            }`}
+          >
+            <div
+              className={`flex h-8 w-12 items-center justify-center rounded-full transition-colors ${
+                isActive ? "bg-accent/15" : "bg-transparent"
+              }`}
+            >
+              <NavIcon icon={item.icon} className="h-4 w-4" strokeWidth={isActive ? 2 : 1.5} />
+            </div>
+            <span>{item.shortLabel}</span>
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
