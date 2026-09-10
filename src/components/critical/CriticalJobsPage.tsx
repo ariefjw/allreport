@@ -6,13 +6,15 @@ import { useReportReminder } from "@/hooks/useReportReminder";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { ImportModal } from "@/components/ui/ImportModal";
+import { PredictionModal } from "@/components/critical/PredictionModal";
 import { KpiBar } from "@/components/ui/KpiBar";
 import { JobGroup } from "@/components/ui/JobGroup";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TimeInput } from "@/components/ui/TimeInput";
 import { generateCriticalReportText, generateCriticalDurationText } from "@/lib/report-generators/critical";
+import { calculatePredictions } from "@/lib/prediction";
 import { formatTimeHM, getTodayDisplay } from "@/lib/utils";
-import { Upload, RotateCcw, XCircle } from "lucide-react";
+import { Upload, RotateCcw, XCircle, BrainCircuit } from "lucide-react";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import type { DailyMonitoringLog } from "@/types";
 
@@ -34,6 +36,8 @@ function useGroupedJobs(jobs: DailyMonitoringLog[]) {
 export function CriticalJobsPage() {
   const { jobs, loading, updateEndTime, markFailed, resetJob, bulkImportEndTimes } = useCriticalJobs();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isPredictionOpen, setIsPredictionOpen] = useState(false);
+  const predictions = useMemo(() => calculatePredictions(jobs), [jobs]);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const filteredJobs = useMemo(() => {
@@ -143,6 +147,18 @@ export function CriticalJobsPage() {
         onCopy={async () => generateCriticalDurationText(jobs)}
       />
       <button
+        onClick={() => setIsPredictionOpen(true)}
+        className="btn-secondary relative"
+      >
+        <BrainCircuit className="h-4 w-4" strokeWidth={1.5} />
+        Prediksi
+        {predictions.length > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-status-failed text-[10px] text-white">
+            {predictions.length}
+          </span>
+        )}
+      </button>
+      <button
         onClick={() => setIsImportModalOpen(true)}
         className="btn-primary"
       >
@@ -173,16 +189,36 @@ export function CriticalJobsPage() {
     </>
   );
 
+  const headerMobileTopRight = (
+    <button
+      onClick={() => setIsPredictionOpen(true)}
+      className="btn-ghost relative p-2 md:hidden"
+      aria-label="Prediksi"
+    >
+      <BrainCircuit className="h-4 w-4" strokeWidth={1.5} />
+      {predictions.length > 0 && (
+        <span className="absolute right-0.5 top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-status-failed text-[8px] text-white">
+          {predictions.length}
+        </span>
+      )}
+    </button>
+  );
+
   return (
     <>
-      <PageHeader
-        title="Critical Job Priority"
-        description="Airflow batch job monitoring"
-        date={getTodayDisplay()}
-        glow="amber"
-        actions={headerActions}
-        mobileActions={mobileActions}
-      />
+      <div className="relative">
+        <div className="absolute right-4 top-6 z-10 md:hidden">
+          {headerMobileTopRight}
+        </div>
+        <PageHeader
+          title="Critical Job Priority"
+          description="Airflow batch job monitoring"
+          date={getTodayDisplay()}
+          glow="amber"
+          actions={headerActions}
+          mobileActions={mobileActions}
+        />
+      </div>
 
       <KpiBar {...summary} />
 
@@ -245,6 +281,11 @@ export function CriticalJobsPage() {
         onImport={handleImport}
         title="Import Job Report"
         description="Paste teks laporan di sini untuk melakukan update."
+      />
+      <PredictionModal
+        isOpen={isPredictionOpen}
+        onClose={() => setIsPredictionOpen(false)}
+        predictions={predictions}
       />
     </>
   );
