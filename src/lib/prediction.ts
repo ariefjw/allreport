@@ -136,8 +136,7 @@ export function calculatePredictions(jobs: DailyMonitoringLog[]): PredictionResu
         }
       }
 
-      // Hitung prediksi awal
-      let predL2 = new Date(baseRefTime + gap * 60000);
+      const predL2 = new Date(baseRefTime + gap * 60000);
       
       predictionsMap[l2.jobName] = predL2;
 
