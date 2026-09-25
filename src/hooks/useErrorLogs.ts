@@ -5,33 +5,31 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/providers/AuthProvider";
 import type { DailyErrorLog } from "@/types";
 
+export const LIVE_SNIPPET_TITLE = "__live_snippet__";
+
 export function useErrorLogs(selectedDate?: string) {
   const { isReady, isAuthenticated } = useAuth();
   const [logs, setLogs] = useState<DailyErrorLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // 1. Inisialisasi Supabase
   const supabase = useMemo(() => createClient(), []);
 
   const fetchLogs = useCallback(async (date?: string) => {
     const url = date ? `/api/error-logs?date=${date}` : "/api/error-logs";
     const res = await fetch(url);
     if (!res.ok) throw new Error("Failed to fetch logs");
-    return res.json();
+    return res.json() as Promise<DailyErrorLog[]>;
   }, []);
 
   const refresh = useCallback(async () => {
     try {
-      const data = await fetchLogs(selectedDate);
-      setLogs(data);
+      setLogs(await fetchLogs(selectedDate));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
     }
   }, [fetchLogs, selectedDate]);
 
-  // 2. Initial Fetch
   useEffect(() => {
     if (!isReady || !isAuthenticated) {
       setLoading(false);
@@ -40,62 +38,53 @@ export function useErrorLogs(selectedDate?: string) {
     refresh().finally(() => setLoading(false));
   }, [isReady, isAuthenticated, refresh]);
 
-  // Subscribe to real-time INSERT events
   useEffect(() => {
-    if (!isReady || !isAuthenticated) return;
-
-    // Listen for new snippet entries
+    if (!isReady || !isAuthenticated || !selectedDate) return;
     const channel = supabase
-      .channel("error-snippets-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT", // Hanya dengarkan saat ada snippet baru yang dibuat
-          schema: "public",
-          table: "daily_error_log", // GANTI dengan nama tabel error log Anda di Supabase!
-        },
-        () => {
-          refresh();
-        }
-      )
+      .channel(`error-logs-${selectedDate}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "daily_error_log",
+        filter: `operational_date=eq.${selectedDate}`,
+      }, refresh)
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [isReady, isAuthenticated, refresh, supabase]);
+    return () => { supabase.removeChannel(channel); };
+  }, [isReady, isAuthenticated, refresh, selectedDate, supabase]);
 
   const createLog = useCallback(async (data: { errorTitle: string; errorTextLog?: string; screenshotFile?: File | null }) => {
-  const formData = new FormData();
-  formData.append("errorTitle", data.errorTitle);
-  if (data.errorTextLog) formData.append("errorTextLog", data.errorTextLog);
-  if (data.screenshotFile) formData.append("screenshot", data.screenshotFile);
+    const formData = new FormData();
+    formData.append("errorTitle", data.errorTitle);
+    if (data.errorTextLog) formData.append("errorTextLog", data.errorTextLog);
+    if (data.screenshotFile) formData.append("screenshot", data.screenshotFile);
+    const res = await fetch("/api/error-logs", { method: "POST", body: formData });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? "Failed to save log");
+    }
+    await refresh();
+  }, [refresh]);
 
-  // 2. KIRIM SEBAGAI FORMDATA
-  const res = await fetch("/api/error-logs", {
-    method: "POST",
-    // PENTING: Hapus header Content-Type! 
-    // Browser akan mengisi 'multipart/form-data' secara otomatis dengan boundary yang unik.
-    body: formData,
-  });
+  const saveSnippet = useCallback(async (date: string, text: string) => {
+    const res = await fetch("/api/error-logs/snippet", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date, text }),
+    });
+    if (!res.ok) throw new Error("Failed to save snippet");
+  }, []);
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? "Failed to save log");
-  }
-  
-  await refresh();
-}, [refresh]);
+  const deleteSnippet = useCallback(async (date: string) => {
+    const res = await fetch(`/api/error-logs/snippet?date=${date}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to delete snippet");
+    await refresh();
+  }, [refresh]);
 
   const deleteLog = useCallback(async (id: string, screenshotUrl: string | null) => {
     const params = new URLSearchParams({ id });
     if (screenshotUrl) params.set("screenshotUrl", screenshotUrl);
-
     const res = await fetch(`/api/error-logs?${params}`, { method: "DELETE" });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error ?? "Failed to delete");
-    }
+    if (!res.ok) throw new Error("Failed to delete");
     await refresh();
   }, [refresh]);
 
@@ -103,5 +92,5 @@ export function useErrorLogs(selectedDate?: string) {
     await Promise.all(items.map((item) => deleteLog(item.id, item.screenshotUrl)));
   }, [deleteLog]);
 
-  return { logs, loading, error, createLog, refresh, deleteLog, deleteMultipleLogs };
+  return { logs, loading, error, createLog, saveSnippet, deleteSnippet, refresh, deleteLog, deleteMultipleLogs };
 }

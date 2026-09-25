@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const patchCriticalJobSchema = z.object({
   endTime: z.string().nullable().optional(),
-  action: z.enum(["mark_failed", "reset"]).optional(),
+  action: z.enum(["mark_failed", "reset", "pause", "resume"]).optional(),
 });
 
 export const patchIntradayJobSchema = z.object({

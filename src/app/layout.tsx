@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { AlarmProvider } from "@/components/providers/AlarmProvider";
+import { PushBridge } from "@/components/providers/PushBridge";
 import "./globals.css";
 
 const firaSans = Fira_Sans({
@@ -42,6 +43,7 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <AlarmProvider>
+              <PushBridge />
               <AppShell>{children}</AppShell>
             </AlarmProvider>
           </AuthProvider>

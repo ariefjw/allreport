@@ -26,6 +26,11 @@ const STATUS_CONFIG: Record<
     text: "text-status-failed",
     glow: "shadow-destructive",
   },
+  "*PAUSED*": {
+    label: "Paused",
+    dot: "bg-status-waiting",
+    text: "text-status-waiting",
+  },
 };
 
 export function StatusBadge({ status }: { status: JobStatus }) {

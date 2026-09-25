@@ -155,5 +155,27 @@ export function useCriticalJobs() {
     }
   }, []);
 
-  return { jobs, loading, error, updateEndTime, markFailed, refresh, bulkImportEndTimes, resetJob };
+  const pauseJob = useCallback(async (id: string) => {
+    const res = await fetch(`/api/critical-jobs/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "pause" }),
+    });
+    if (!res.ok) throw new Error("Failed to pause job");
+    const updated = await res.json();
+    setJobs((prev) => prev.map((j) => (j.id === id ? updated : j)));
+  }, []);
+
+  const resumeJob = useCallback(async (id: string) => {
+    const res = await fetch(`/api/critical-jobs/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "resume" }),
+    });
+    if (!res.ok) throw new Error("Failed to resume job");
+    const updated = await res.json();
+    setJobs((prev) => prev.map((j) => (j.id === id ? updated : j)));
+  }, []);
+
+  return { jobs, loading, error, updateEndTime, markFailed, refresh, bulkImportEndTimes, resetJob, pauseJob, resumeJob };
 }

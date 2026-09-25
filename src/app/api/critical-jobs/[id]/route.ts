@@ -4,6 +4,8 @@ import {
   updateCriticalJobEndTime,
   markCriticalJobFailed,
   resetCriticalJob,
+  pauseCriticalJob,
+  resumeCriticalJob,
 } from "@/lib/services/critical-jobs";
 import { mapCriticalLog } from "@/lib/db/mappers";
 import { patchCriticalJobSchema } from "@/lib/api/validation";
@@ -26,6 +28,16 @@ export async function PATCH(
 
     if (body.action === "reset") {
       const row = await resetCriticalJob(supabase!, id);
+      return NextResponse.json(mapCriticalLog(row));
+    }
+
+    if (body.action === "pause") {
+      const row = await pauseCriticalJob(supabase!, id);
+      return NextResponse.json(mapCriticalLog(row));
+    }
+
+    if (body.action === "resume") {
+      const row = await resumeCriticalJob(supabase!, id);
       return NextResponse.json(mapCriticalLog(row));
     }
 

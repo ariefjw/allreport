@@ -6,15 +6,13 @@ import { useReportReminder } from "@/hooks/useReportReminder";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { ImportModal } from "@/components/ui/ImportModal";
-import { PredictionModal } from "@/components/critical/PredictionModal";
 import { KpiBar } from "@/components/ui/KpiBar";
 import { JobGroup } from "@/components/ui/JobGroup";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TimeInput } from "@/components/ui/TimeInput";
 import { generateCriticalReportText, generateCriticalDurationText } from "@/lib/report-generators/critical";
-import { calculatePredictions } from "@/lib/prediction";
 import { formatTimeHM, getTodayDisplay } from "@/lib/utils";
-import { Upload, RotateCcw, XCircle, BrainCircuit } from "lucide-react";
+import { Upload, RotateCcw, XCircle, Pause, Play } from "lucide-react";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import type { DailyMonitoringLog } from "@/types";
 
@@ -22,6 +20,7 @@ function useGroupedJobs(jobs: DailyMonitoringLog[]) {
   return useMemo(() => {
     const groups: Record<string, DailyMonitoringLog[]> = {
       "*FAILED*": [],
+      "*PAUSED*": [],
       "*RUNNING*": [],
       "*DONE*": [],
       "*WAITING*": [],
@@ -34,10 +33,8 @@ function useGroupedJobs(jobs: DailyMonitoringLog[]) {
 }
 
 export function CriticalJobsPage() {
-  const { jobs, loading, updateEndTime, markFailed, resetJob, bulkImportEndTimes } = useCriticalJobs();
+  const { jobs, loading, updateEndTime, markFailed, resetJob, pauseJob, resumeJob, bulkImportEndTimes } = useCriticalJobs();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [isPredictionOpen, setIsPredictionOpen] = useState(false);
-  const predictions = useMemo(() => calculatePredictions(jobs), [jobs]);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const filteredJobs = useMemo(() => {
@@ -130,6 +127,7 @@ export function CriticalJobsPage() {
 
   const sections: { status: string; title: string; defaultExpanded: boolean }[] = [
     { status: "*FAILED*", title: "Failed", defaultExpanded: true },
+    { status: "*PAUSED*", title: "Paused", defaultExpanded: true },
     { status: "*RUNNING*", title: "Running", defaultExpanded: true },
     { status: "*DONE*", title: "Done", defaultExpanded: false },
     { status: "*WAITING*", title: "Waiting", defaultExpanded: false },
@@ -146,18 +144,6 @@ export function CriticalJobsPage() {
         variant="secondary"
         onCopy={async () => generateCriticalDurationText(jobs)}
       />
-      <button
-        onClick={() => setIsPredictionOpen(true)}
-        className="btn-secondary relative"
-      >
-        <BrainCircuit className="h-4 w-4" strokeWidth={1.5} />
-        Prediksi
-        {predictions.length > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-status-failed text-[10px] text-white">
-            {predictions.length}
-          </span>
-        )}
-      </button>
       <button
         onClick={() => setIsImportModalOpen(true)}
         className="btn-primary"
@@ -189,36 +175,16 @@ export function CriticalJobsPage() {
     </>
   );
 
-  const headerMobileTopRight = (
-    <button
-      onClick={() => setIsPredictionOpen(true)}
-      className="btn-ghost relative p-2 md:hidden"
-      aria-label="Prediksi"
-    >
-      <BrainCircuit className="h-4 w-4" strokeWidth={1.5} />
-      {predictions.length > 0 && (
-        <span className="absolute right-0.5 top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-status-failed text-[8px] text-white">
-          {predictions.length}
-        </span>
-      )}
-    </button>
-  );
-
   return (
     <>
-      <div className="relative">
-        <div className="absolute right-4 top-6 z-10 md:hidden">
-          {headerMobileTopRight}
-        </div>
-        <PageHeader
-          title="Critical Job Priority"
-          description="Airflow batch job monitoring"
-          date={getTodayDisplay()}
-          glow="amber"
-          actions={headerActions}
-          mobileActions={mobileActions}
-        />
-      </div>
+      <PageHeader
+        title="Critical Job Priority"
+        description="Airflow batch job monitoring"
+        date={getTodayDisplay()}
+        glow="amber"
+        actions={headerActions}
+        mobileActions={mobileActions}
+      />
 
       <KpiBar {...summary} />
 
@@ -238,6 +204,7 @@ export function CriticalJobsPage() {
           >
             <option value="all">All Status</option>
             <option value="*FAILED*">Failed</option>
+            <option value="*PAUSED*">Paused</option>
             <option value="*RUNNING*">Running</option>
             <option value="*DONE*">Done</option>
             <option value="*WAITING*">Waiting</option>
@@ -263,6 +230,8 @@ export function CriticalJobsPage() {
                   onEndTimeChange={updateEndTime}
                   onMarkFailed={markFailed}
                   onResetJob={resetJob}
+                  onPause={pauseJob}
+                  onResume={resumeJob}
                 />
               ))}
             </JobGroup>
@@ -282,11 +251,6 @@ export function CriticalJobsPage() {
         title="Import Job Report"
         description="Paste teks laporan di sini untuk melakukan update."
       />
-      <PredictionModal
-        isOpen={isPredictionOpen}
-        onClose={() => setIsPredictionOpen(false)}
-        predictions={predictions}
-      />
     </>
   );
 }
@@ -297,16 +261,21 @@ function JobRow({
   onEndTimeChange,
   onMarkFailed,
   onResetJob,
+  onPause,
+  onResume,
 }: {
   job: DailyMonitoringLog;
   displayNumber: number;
   onEndTimeChange: (id: string, time: string | null) => Promise<void>;
   onMarkFailed: (id: string) => Promise<void>;
   onResetJob: (id: string) => Promise<void>;
+  onPause: (id: string) => Promise<void>;
+  onResume: (id: string) => Promise<void>;
 }) {
   const isRunning = job.status === "*RUNNING*";
   const isDone = job.status === "*DONE*";
   const isFailed = job.status === "*FAILED*";
+  const isPaused = job.status === "*PAUSED*";
   const canInputTime = isRunning || isDone;
 
   return (
@@ -330,16 +299,26 @@ function JobRow({
         </div>
       )}
       {isRunning && (
-        <button
-          onClick={() => {
-            if (window.confirm(`Mark "${job.jobName}" as failed?`)) {
-              onMarkFailed(job.id);
-            }
-          }}
-          className="btn-ghost p-1.5 text-status-failed hover:text-status-failed"
-          aria-label="Mark Failed"
-        >
-          <XCircle className="h-4 w-4" strokeWidth={1.5} />
+        <>
+          <button onClick={() => onPause(job.id)} className="btn-ghost p-1.5 text-muted hover:text-ink" aria-label="Pause">
+            <Pause className="h-4 w-4" strokeWidth={1.5} />
+          </button>
+          <button
+            onClick={() => {
+              if (window.confirm(`Mark "${job.jobName}" as failed?`)) {
+                onMarkFailed(job.id);
+              }
+            }}
+            className="btn-ghost p-1.5 text-status-failed hover:text-status-failed"
+            aria-label="Mark Failed"
+          >
+            <XCircle className="h-4 w-4" strokeWidth={1.5} />
+          </button>
+        </>
+      )}
+      {isPaused && (
+        <button onClick={() => onResume(job.id)} className="btn-ghost p-1.5 text-status-running hover:text-status-running" aria-label="Resume">
+          <Play className="h-4 w-4" strokeWidth={1.5} />
         </button>
       )}
       {isFailed && (

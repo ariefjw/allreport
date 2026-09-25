@@ -55,3 +55,22 @@ export interface DbAlarmSchedule {
   created_at: string;
   updated_at: string;
 }
+
+export interface DbAuditLog {
+  id: string;
+  table_name: string;
+  record_id: string;
+  action: string;
+  changed_by: string | null;
+  old_data: unknown;
+  new_data: unknown;
+  created_at: string;
+}
+
+export interface DbPushToken {
+  id: string;
+  user_id: string;
+  token: string;
+  platform: string;
+  created_at: string;
+}

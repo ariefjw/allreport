@@ -1,4 +1,4 @@
-export type JobStatus = "*WAITING*" | "*RUNNING*" | "*DONE*" | "*FAILED*";
+export type JobStatus = "*WAITING*" | "*RUNNING*" | "*DONE*" | "*FAILED*" | "*PAUSED*";
 
 export interface MasterJob {
   id: number;

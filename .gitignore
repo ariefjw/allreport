@@ -11,10 +11,15 @@
 # testing
 /coverage
 /supabase
+!/supabase/migrations
 
 # next.js
 /.next/
 /out/
+/android/.gradle/
+/android/app/build/
+/android/capacitor-cordova-android-plugins/
+/android/app/src/main/assets/
 
 # production
 /build
@@ -35,6 +40,8 @@ scripts/*.sql
 # env files
 .env*.local
 .env
+**/google-services.json
+**/*service-account*.json
 
 # typescript
 *.tsbuildinfo

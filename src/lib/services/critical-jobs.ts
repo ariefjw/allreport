@@ -49,7 +49,7 @@ export async function syncCriticalRunningStatus(supabase: SupabaseClient) {
     .from("daily_monitoring_log")
     .update({ status: "*RUNNING*", updated_at: now })
     .eq("operational_date", operationalDate)
-    .eq("status", "*WAITING*")
+    .in("status", ["*WAITING*"])
     .lte("scheduled_timestamp", now);
 
   if (error) throw error;
@@ -139,6 +139,36 @@ export async function markCriticalJobFailed(supabase: SupabaseClient, id: string
     .from("daily_monitoring_log")
     .update({
       status: "*FAILED*",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as DbDailyMonitoringLog;
+}
+
+export async function pauseCriticalJob(supabase: SupabaseClient, id: string) {
+  const { data, error } = await supabase
+    .from("daily_monitoring_log")
+    .update({
+      status: "*PAUSED*",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as DbDailyMonitoringLog;
+}
+
+export async function resumeCriticalJob(supabase: SupabaseClient, id: string) {
+  const { data, error } = await supabase
+    .from("daily_monitoring_log")
+    .update({
+      status: "*RUNNING*",
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)

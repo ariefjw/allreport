@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useErrorLogs } from "@/hooks/useErrorLogs";
+import { useErrorLogs, LIVE_SNIPPET_TITLE } from "@/hooks/useErrorLogs";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { ImagePasteZone } from "@/components/ui/ImagePasteZone";
@@ -14,7 +14,7 @@ import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 export function ErrorLogsPage() {
   const today = new Date().toLocaleDateString("en-CA");
   const [selectedDate, setSelectedDate] = useState(today);
-  const { logs, loading, error, createLog, deleteLog, deleteMultipleLogs } = useErrorLogs(selectedDate);
+  const { logs, loading, error, createLog, saveSnippet, deleteSnippet, deleteLog, deleteMultipleLogs } = useErrorLogs(selectedDate);
   const [errorText, setErrorText] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -26,22 +26,56 @@ export function ErrorLogsPage() {
   const [deleting, setDeleting] = useState(false);
 
   const supabase = useMemo(() => createClient(), []);
+  const isRemoteUpdate = useRef(false);
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const channel = supabase.channel('snippet-room');
+    const snippet = logs.find((log) => log.errorTitle === LIVE_SNIPPET_TITLE);
+    const next = snippet?.errorTextLog ?? "";
+    if (next !== errorText) {
+      isRemoteUpdate.current = true;
+      setErrorText(next);
+    }
+  }, [logs]);
+
+  useEffect(() => {
+    const channel = supabase.channel(`snippet-broadcast-${selectedDate}`);
     channel.on('broadcast', { event: 'snippet-update' }, (payload) => {
-      setErrorText(payload.payload.text);
+      const text = typeof payload.payload?.text === 'string' ? payload.payload.text : '';
+      if (text !== errorText) {
+        isRemoteUpdate.current = true;
+        setErrorText(text);
+      }
     }).subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [supabase]);
+  }, [supabase, selectedDate, errorText]);
 
   const handleTextChange = (val: string) => {
     setErrorText(val);
-    supabase.channel('snippet-room').send({
+    supabase.channel(`snippet-broadcast-${selectedDate}`).send({
       type: 'broadcast',
       event: 'snippet-update',
       payload: { text: val },
+    });
+    if (isRemoteUpdate.current) {
+      isRemoteUpdate.current = false;
+      return;
+    }
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(() => {
+      saveSnippet(selectedDate, val).catch(() => {});
+    }, 500);
+  };
+
+  const handleDeleteSnippet = async () => {
+    if (!window.confirm("Hapus snippet hari ini?")) return;
+    setErrorText("");
+    await deleteSnippet(selectedDate);
+    supabase.channel(`snippet-broadcast-${selectedDate}`).send({
+      type: 'broadcast',
+      event: 'snippet-update',
+      payload: { text: "" },
     });
   };
 
@@ -148,9 +182,10 @@ export function ErrorLogsPage() {
         </div>
 
         <div className="card p-5">
-          <h2 className="mb-4 text-sm font-semibold text-ink">
-            Live Snippet
-          </h2>
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-ink">Live Snippet</h2>
+            <button type="button" onClick={handleDeleteSnippet} className="btn-ghost px-3 py-1.5 text-xs">Delete Snippet</button>
+          </div>
 
           <div className="space-y-4">
             <div className="overflow-hidden rounded-xl border border-hairline bg-surface shadow-inner">
