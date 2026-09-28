@@ -74,3 +74,34 @@ export interface DbPushToken {
   platform: string;
   created_at: string;
 }
+
+export interface DbTimesheetProfile {
+  id: string;
+  user_id: string;
+  employee_no: string;
+  full_name: string;
+  signature_path: string | null;
+  signature_mime: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbTimesheetEntry {
+  id: string;
+  user_id: string;
+  operational_month: number;
+  operational_year: number;
+  employee_no: string;
+  full_name: string;
+  organization: string;
+  position: string;
+  client: string;
+  project: string;
+  schedule_text: string;
+  auto_holiday: boolean;
+  manual_holidays: string | null;
+  holiday_days: number[];
+  total_hours: number | null;
+  has_signature: boolean;
+  created_at: string;
+}

@@ -60,3 +60,21 @@ export interface AlarmSchedule {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface TimesheetProfile {
+  id: string;
+  employeeNo: string;
+  fullName: string;
+  signaturePreviewUrl: string | null;
+}
+
+export interface TimesheetEntry {
+  id: string;
+  month: number;
+  year: number;
+  fullName: string;
+  scheduleText: string;
+  totalHours: number | null;
+  hasSignature: boolean;
+  createdAt: string;
+}

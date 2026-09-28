@@ -1,40 +1,75 @@
-import { NextResponse } from "next/server";
-import { parseSchedule } from "@/lib/timesheet/parser";
-import { getHolidays } from "@/lib/timesheet/holidays";
-import { generateTimesheetBuffer } from "@/lib/timesheet/excel";
-import { MONTHS_INDONESIA } from "@/lib/timesheet/constants";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, handleApiError } from "@/lib/api/auth";
+import { getProfile, getSignatureDataUrl, createEntry } from "@/lib/services/timesheet";
+import { buildTimesheet, TIMESHEET_CONTENT_TYPE } from "@/lib/timesheet/build";
+import { generateTimesheetSchema } from "@/lib/api/validation";
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json();
-    const { employee, schedule: rawSchedule, month, year, autoHoliday, manualHolidays } = body;
-    if (!employee || !rawSchedule || !month || !year) return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    const { supabase, user, response } = await requireAuth();
+    if (response) return response;
 
-    const schedule = parseSchedule(rawSchedule);
-    if (!Object.keys(schedule).length) return NextResponse.json({ error: "Format jadwal tidak dikenali" }, { status: 400 });
-
-    const holidays = new Set<number>();
-    if (autoHoliday) {
-      const { holidays: h } = await getHolidays(Number(year), Number(month));
-      for (const val of h) holidays.add(val);
+    const body = await request.json().catch(() => ({}));
+    const parsed = generateTimesheetSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Input tidak valid", issues: parsed.error.issues }, { status: 400 });
     }
-    if (manualHolidays) {
-      for (const x of manualHolidays.split(",")) {
-        const val = parseInt(x.trim(), 10);
-        if (!isNaN(val)) holidays.add(val);
-      }
+    const input = parsed.data;
+
+    const profile = await getProfile(supabase!, user!.id);
+    if (!profile) {
+      return NextResponse.json({ error: "Lengkapi Data Karyawan terlebih dahulu" }, { status: 400 });
     }
 
-    const buf = await generateTimesheetBuffer(employee, schedule, Number(month), Number(year), holidays);
-    const filename = `Timesheet SMBC ${MONTHS_INDONESIA[Number(month)]} ${year} - ${employee.fullName}.xlsx`;
-    return new NextResponse(buf as unknown as BodyInit, {
+    const signatureDataUrl = await getSignatureDataUrl(supabase!, profile.signature_path, profile.signature_mime);
+
+    // employeeNo/fullName come from the profile (server-side, tamper-proof);
+    // the other four are the form's defaults, sent per request and snapshotted.
+    const employee = {
+      employeeNo: profile.employee_no,
+      fullName: profile.full_name,
+      organization: input.organization,
+      position: input.position,
+      client: input.client,
+      project: input.project,
+    };
+
+    const built = await buildTimesheet({
+      employee,
+      scheduleText: input.schedule,
+      month: input.month,
+      year: input.year,
+      autoHoliday: input.autoHoliday,
+      manualHolidays: input.manualHolidays,
+      signatureDataUrl,
+      signatureMime: profile.signature_mime,
+      overtimeFlags: input.overtimeFlags,
+      supabase: supabase!,
+    });
+
+    try {
+      await createEntry(supabase!, user!.id, {
+        month: input.month,
+        year: input.year,
+        employee,
+        scheduleText: input.schedule,
+        autoHoliday: input.autoHoliday,
+        manualHolidays: input.manualHolidays || null,
+        holidayDays: built.holidayDays,
+        totalHours: built.totalHours,
+        hasSignature: built.hasSignature,
+      });
+    } catch (historyError) {
+      console.warn("[Timesheet] riwayat tidak tersimpan:", historyError);
+    }
+
+    return new NextResponse(built.buffer as unknown as BodyInit, {
       headers: {
-        "Content-Disposition": `attachment; filename="${filename}"`,
-        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="${built.fileName}"`,
+        "Content-Type": TIMESHEET_CONTENT_TYPE,
       },
     });
-  } catch (error: unknown) {
-    console.error("Timesheet generation error:", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error);
   }
 }

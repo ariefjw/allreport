@@ -2,11 +2,15 @@ import type {
   DailyMonitoringLog,
   DailyIntradayLog,
   DailyErrorLog,
+  TimesheetProfile,
+  TimesheetEntry,
 } from "@/types";
 import type {
   DbDailyMonitoringLog,
   DbDailyIntradayLog,
   DbDailyErrorLog,
+  DbTimesheetProfile,
+  DbTimesheetEntry,
 } from "./types";
 
 function formatTimeFromDb(time: string): string {
@@ -54,6 +58,30 @@ export function mapErrorLog(row: DbDailyErrorLog): DailyErrorLog {
     errorTitle: row.error_title,
     errorTextLog: row.error_text_log,
     screenshotUrl: row.screenshot_url,
+    createdAt: row.created_at,
+  };
+}
+
+export function mapTimesheetProfile(
+  row: DbTimesheetProfile & { signature_preview_url: string | null }
+): TimesheetProfile {
+  return {
+    id: row.id,
+    employeeNo: row.employee_no,
+    fullName: row.full_name,
+    signaturePreviewUrl: row.signature_preview_url,
+  };
+}
+
+export function mapTimesheetEntry(row: DbTimesheetEntry): TimesheetEntry {
+  return {
+    id: row.id,
+    month: row.operational_month,
+    year: row.operational_year,
+    fullName: row.full_name,
+    scheduleText: row.schedule_text,
+    totalHours: row.total_hours,
+    hasSignature: row.has_signature,
     createdAt: row.created_at,
   };
 }
