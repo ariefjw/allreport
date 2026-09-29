@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { FloatingAlert } from "@/components/ui/FloatingAlert";
 import { MONTHS_INDONESIA, MONTHS_INDONESIA_FULL, MAX_SIGNATURE_BYTES, DEFAULT_TIMESHEET_PROFILE } from "@/lib/timesheet/constants";
 import { parseSchedule } from "@/lib/timesheet/parser";
-import { autoOvertimeFlags, previewRows, type PreviewRow } from "@/lib/timesheet/pattern";
+import { previewRows, type PreviewRow } from "@/lib/timesheet/pattern";
 import { OvertimeModal } from "@/components/ui/OvertimeModal";
 import { useTimesheet, type TimesheetProfileFields } from "@/hooks/useTimesheet";
 import type { TimesheetEntry } from "@/types";
@@ -29,6 +29,25 @@ function saveBlob(blob: Blob, filename: string) {
   a.click();
   a.remove();
   window.URL.revokeObjectURL(url);
+}
+
+/** Hari libur nasional dari server; gagal tidak mengganggu, modal tetap terbuka. */
+async function fetchHolidayDays(month: number, year: number): Promise<number[]> {
+  try {
+    const res = await fetch(`/api/timesheet/holidays?year=${year}&month=${month}`);
+    if (!res.ok) return [];
+    const body = (await res.json()) as { days?: number[] };
+    return Array.isArray(body.days) ? body.days : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseManualHolidays(raw: string): number[] {
+  return raw
+    .split(",")
+    .map((part) => parseInt(part.trim(), 10))
+    .filter((day) => !Number.isNaN(day) && day >= 1 && day <= 31);
 }
 
 export default function TimesheetPage() {
@@ -197,11 +216,15 @@ export default function TimesheetPage() {
       const schedule = parseSchedule(form.schedule);
       if (!Object.keys(schedule).length) throw new Error("Format jadwal tidak dikenali");
 
+      const autoDays = form.autoHoliday ? await fetchHolidayDays(month, year) : [];
+      const holidays = new Set([...autoDays, ...parseManualHolidays(form.manualHolidays)]);
+      const rows = previewRows(schedule, year, month, holidays);
+      // Hanya hari libur yang dicentang default; sisanya pilihan user.
+      const flags: Record<string, boolean> = {};
+      for (const row of rows) flags[row.key] = row.isHoliday;
+
       setSavedName(saved.fullName);
-      setPreview({
-        rows: previewRows(schedule, year, month),
-        flags: Object.fromEntries(autoOvertimeFlags(schedule)),
-      });
+      setPreview({ rows, flags });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -276,12 +299,6 @@ export default function TimesheetPage() {
 
   const toggleFlag = (key: string, checked: boolean) => {
     setPreview((prev) => (prev ? { ...prev, flags: { ...prev.flags, [key]: checked } } : prev));
-  };
-
-  const resetFlags = () => {
-    const schedule = parseSchedule(form.schedule);
-    const flags = Object.fromEntries(autoOvertimeFlags(schedule));
-    setPreview((prev) => (prev ? { ...prev, flags } : prev));
   };
 
   return (
@@ -520,7 +537,6 @@ export default function TimesheetPage() {
         busy={loadingGenerate}
         error={error || null}
         onToggle={toggleFlag}
-        onReset={resetFlags}
         onConfirm={handleConfirmGenerate}
       />
     </main>

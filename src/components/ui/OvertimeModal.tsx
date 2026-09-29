@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Download, RotateCcw, Clock } from "lucide-react";
+import { X, Download, Clock } from "lucide-react";
 import { hoursBetween, type PreviewRow } from "@/lib/timesheet/pattern";
 
 interface OvertimeModalProps {
@@ -12,7 +12,6 @@ interface OvertimeModalProps {
   busy: boolean;
   error?: string | null;
   onToggle: (key: string, checked: boolean) => void;
-  onReset: () => void;
   onConfirm: () => void;
 }
 
@@ -25,7 +24,6 @@ export function OvertimeModal({
   busy,
   error,
   onToggle,
-  onReset,
   onConfirm,
 }: OvertimeModalProps) {
   if (!isOpen) return null;
@@ -41,7 +39,7 @@ export function OvertimeModal({
           <div>
             <h2 className="text-lg font-semibold text-ink">Pilih Hari Lembur</h2>
             <p className="mt-0.5 text-sm text-muted">
-              {monthLabel} · Centang shift yang dihitung lembur. Default sudah diisi otomatis dari pola 8 hari.
+              {monthLabel} · Centang shift yang dihitung lembur. Hari libur nasional sudah dicentang otomatis.
             </p>
           </div>
           <button type="button" onClick={onClose} disabled={busy} className="btn-ghost p-1.5">
@@ -51,9 +49,7 @@ export function OvertimeModal({
 
         <div className="card-body flex min-h-0 flex-1 flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="rounded-full bg-canvas px-2.5 py-1 text-body">
-              {segments.length} shift
-            </span>
+            <span className="rounded-full bg-canvas px-2.5 py-1 text-body">{segments.length} shift</span>
             <span className="flex items-center gap-1.5 rounded-full bg-canvas px-2.5 py-1 text-accent">
               <Clock className="h-3.5 w-3.5" />
               {overtimeRows.length} lembur · {overtimeHours} jam
@@ -69,6 +65,7 @@ export function OvertimeModal({
                   <th className="px-3 py-2.5">Masuk</th>
                   <th className="px-3 py-2.5">Keluar</th>
                   <th className="px-3 py-2.5 text-right">Jam</th>
+                  <th className="px-3 py-2.5 text-center">Libur</th>
                   <th className="px-3 py-2.5 text-center">Lembur</th>
                 </tr>
               </thead>
@@ -84,6 +81,7 @@ export function OvertimeModal({
                       <td className="px-3 py-2 text-right tabular-nums text-muted">
                         {worked ? `${hoursBetween(row.cin!, row.cout!)} jam` : "OFF"}
                       </td>
+                      <td className="px-3 py-2 text-center text-muted">{row.isHoliday ? "Libur" : ""}</td>
                       <td className="px-3 py-2 text-center">
                         <input
                           type="checkbox"
@@ -103,25 +101,14 @@ export function OvertimeModal({
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={onReset}
-              disabled={busy}
-              className="btn-secondary gap-2 py-2 text-xs disabled:opacity-40"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Kembali ke otomatis
+          <div className="flex justify-end gap-3">
+            <button type="button" onClick={onClose} disabled={busy} className="btn-secondary">
+              Batal
             </button>
-            <div className="flex gap-3">
-              <button type="button" onClick={onClose} disabled={busy} className="btn-secondary">
-                Batal
-              </button>
-              <button type="button" onClick={onConfirm} disabled={busy} className="btn-primary gap-2">
-                <Download className="h-4 w-4" />
-                {busy ? "Membuat Timesheet..." : "Buat Excel"}
-              </button>
-            </div>
+            <button type="button" onClick={onConfirm} disabled={busy} className="btn-primary gap-2">
+              <Download className="h-4 w-4" />
+              {busy ? "Membuat Timesheet..." : "Buat Excel"}
+            </button>
           </div>
         </div>
       </div>

@@ -3,7 +3,6 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { MONTHS_INDONESIA_FULL, type EmployeeData } from "./constants";
 import { fitImageSize, readImageSize } from "./image-size";
-import { isOvertimeDay, isOvertimeSegment } from "./pattern";
 import type { Schedule } from "./parser";
 
 export interface SignatureEmbed {
@@ -58,23 +57,17 @@ export async function generateTimesheetBuffer(
 
   type Entry = [number, string | null, string | null, string | null, string, boolean];
   const entries: Entry[] = [];
-  const flagOf = (key: string, auto: boolean) => (overtimeFlags?.has(key) ? overtimeFlags.get(key)! : auto);
+  // Kolom L mengikuti checklist user; tanpa checklist (mis. unduh ulang riwayat)
+  // fallback ke hari libur nasional.
+  const flagOf = (key: string, fallback: boolean) => (overtimeFlags?.has(key) ? overtimeFlags.get(key)! : fallback);
   for (let day = 1; day <= lastDay; day++) {
     const shifts = schedule[day] ?? [];
     const isHoliday = holidays.has(day);
     if (!shifts.length) {
-      // Hari off tidak punya segmen; pakai penilaian level hari (0 jam, tetap beri tanda).
-      entries.push([day, null, null, isHoliday ? null : "", "OFF", flagOf(`${day}:off`, isOvertimeDay(day, shifts))]);
+      entries.push([day, null, null, isHoliday ? null : "", "OFF", flagOf(`${day}:off`, isHoliday)]);
     } else {
       shifts.forEach(([cin, cout], i) => {
-        entries.push([
-          day,
-          cin,
-          cout,
-          isHoliday ? "YES" : "NO",
-          "Standby",
-          flagOf(`${day}:${i}`, isOvertimeSegment(day, shifts, i)),
-        ]);
+        entries.push([day, cin, cout, isHoliday ? "YES" : "NO", "Standby", flagOf(`${day}:${i}`, isHoliday)]);
       });
     }
   }

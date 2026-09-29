@@ -42,7 +42,7 @@ export const generateTimesheetSchema = z.object({
   position: z.string().trim().min(1).max(128).default(DEFAULT_TIMESHEET_PROFILE.position),
   client: z.string().trim().min(1).max(128).default(DEFAULT_TIMESHEET_PROFILE.client),
   project: z.string().trim().min(1).max(128).default(DEFAULT_TIMESHEET_PROFILE.project),
-  // Checklist lembur pilihan user (kunci `hari:indeksSegmen`); tanpa ini pakai pola otomatis.
+  // Checklist lembur pilihan user (kunci `hari:indeksSegmen`); tanpa ini pakai hari libur nasional.
   overtimeFlags: z.record(z.string().max(16), z.boolean()).optional(),
 });
 

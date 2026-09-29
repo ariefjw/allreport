@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import ExcelJS from "exceljs";
 import { generateTimesheetBuffer } from "./excel";
 import { parseSchedule } from "./parser";
-import { countTotalHours } from "./build";
+import { sumHours } from "./build";
 import type { EmployeeData } from "./constants";
 
 const EMPLOYEE: EmployeeData = {
@@ -35,6 +35,7 @@ async function render(options: {
   days: number;
   multiShiftDays?: number[];
   withSignature?: boolean;
+  holidays?: number[];
   overtimeFlags?: Record<string, boolean>;
 }) {
   const buffer = await generateTimesheetBuffer(
@@ -42,7 +43,7 @@ async function render(options: {
     parseSchedule(scheduleText(options.days, options.multiShiftDays ?? [])),
     options.month,
     2026,
-    new Set(),
+    new Set(options.holidays ?? []),
     options.withSignature === false ? null : { dataUrl: ONE_PX_PNG, mime: "image/png" },
     options.overtimeFlags ? new Map(Object.entries(options.overtimeFlags)) : null
   );
@@ -53,14 +54,15 @@ async function render(options: {
   return ws!;
 }
 
-async function generate(schedule: string) {
+async function generate(schedule: string, overtimeFlags?: Record<string, boolean>) {
   const buffer = await generateTimesheetBuffer(
     EMPLOYEE,
     parseSchedule(schedule),
     7,
     2026,
     new Set(),
-    null
+    null,
+    overtimeFlags ? new Map(Object.entries(overtimeFlags)) : null
   );
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(buffer as unknown as ArrayBuffer);
@@ -75,15 +77,13 @@ function imageAnchorRow(ws: ExcelJS.Worksheet): number {
   return anchor?.tl?.row as number;
 }
 
-/** Jadwal 31 hari yang benar: siklus = tanggal % 8, dengan dua hari multi-shift. */
+/** Jadwal 31 hari sungguhan: semua hari kerja 1 segmen, kecuali tgl 13 & 22. */
 function realScheduleText(): string {
   const lines: string[] = [];
   for (let day = 1; day <= 31; day++) {
-    const cycle = day % 8;
-    const shift = cycle === 0 || cycle === 3 ? "off" : cycle <= 2 ? "23:00 - 07:00" : cycle <= 5 ? "07:00 - 15:00" : "15:00 - 23:00";
-    const actual =
-      day === 13 ? "07:00 - 15:00 // 15:00 - 19:00" : day === 22 ? "07:00 - 15:00 // 15:00 - 23:00" : shift;
-    lines.push(`${day}\tSenin\t${actual}`);
+    const shift =
+      day === 13 ? "07:00 - 15:00 // 15:00 - 19:00" : day === 22 ? "07:00 - 15:00 // 15:00 - 23:00" : "07:00 - 15:00";
+    lines.push(`${day}\tSenin\t${shift}`);
   }
   return lines.join("\n");
 }
@@ -141,26 +141,16 @@ describe("timesheet excel signature anchoring", () => {
   });
 });
 
-describe("pattern-based overtime column", () => {
-  it("writes a static Lembur/Normal flag instead of a formula", async () => {
+describe("overtime column (checklist user + libur nasional)", () => {
+  it("writes a static Lembur/Normal value instead of a formula", async () => {
     const ws = await render({ month: 7, days: 31 });
-    // day 1 sits at cycle day 1 (expects 23:00 - 07:00) but the schedule works 07:00 - 15:00
-    assert.equal(ws.getCell("L12").value, "Lembur");
+    assert.equal(ws.getCell("L12").value, "Normal");
     assert.equal(typeof ws.getCell("L12").value, "string");
-    // day 5 sits at cycle day 5 and matches 07:00 - 15:00
-    assert.equal(ws.getCell("L16").value, "Normal");
   });
 
-  it("marks every row of a pattern-compliant month as Normal", async () => {
-    // cycle day = date % 8: 0/3 off, 1/2 night, 4/5 morning, 6/7 afternoon
-    const lines: string[] = [];
-    for (let day = 1; day <= 31; day++) {
-      const cycle = day % 8;
-      const shift = cycle === 0 || cycle === 3 ? "off" : cycle <= 2 ? "23:00 - 07:00" : cycle <= 5 ? "07:00 - 15:00" : "15:00 - 23:00";
-      lines.push(`${day}\tSenin\t${shift}`);
-    }
-    const ws = await generate(lines.join("\n"));
-    for (let row = 12; row < 12 + 31; row++) {
+  it("marks nothing as lembur when there is no holiday and no checklist", async () => {
+    const ws = await generate(realScheduleText());
+    for (let row = 12; row < 12 + 33; row++) {
       assert.equal(ws.getCell(`L${row}`).value, "Normal", `row ${row}`);
     }
   });
@@ -171,46 +161,50 @@ describe("pattern-based overtime column", () => {
     assert.match(String(f6.formula), /SUMIF\(L\d+:L\d+,"Lembur"/);
   });
 
-  it("marks only the extra // segment of a multi-shift day as Lembur", async () => {
-    const ws = await generate(realScheduleText());
+  it("follows the user's checklist exactly, including the extra // segment", async () => {
     // day 13 and day 22 are the only multi-shift days, so rows shift after day 13
+    const ws = await generate(realScheduleText(), { "13:0": false, "13:1": true, "22:0": true, "22:1": false });
     assert.equal(ws.getCell("L24").value, "Normal");
     assert.equal(ws.getCell("L25").value, "Lembur");
     assert.equal(ws.getCell("L34").value, "Lembur");
     assert.equal(ws.getCell("L35").value, "Normal");
     assert.equal(ws.getCell("L12").value, "Normal");
-    assert.equal(ws.getCell("L14").value, "Normal");
   });
 
-  it("lets the user's checklist override the automatic rule", async () => {
-    // auto: day 1 = Lembur (pola mau 23:00 - 07:00), day 5 = Normal
-    const ws = await render({ month: 7, days: 31, overtimeFlags: { "1:0": false, "5:0": true } });
-    assert.equal(ws.getCell("L12").value, "Normal");
-    assert.equal(ws.getCell("L16").value, "Lembur");
+  it("lets the user uncheck a national holiday", async () => {
+    const ws = await render({ month: 7, days: 31, holidays: [17, 25], overtimeFlags: { "17:0": true, "25:0": false } });
+    assert.equal(ws.getCell("L28").value, "Lembur"); // day 17, user kept it
+    assert.equal(ws.getCell("L36").value, "Normal"); // day 25, user cleared it
   });
 
-  it("falls back to the automatic rule for keys the user never saw", async () => {
-    const ws = await render({ month: 7, days: 31, overtimeFlags: { "1:0": false } });
-    assert.equal(ws.getCell("L12").value, "Normal");
-    assert.equal(ws.getCell("L16").value, "Normal");
-    assert.equal(ws.getCell("L13").value, "Lembur"); // day 2, never flagged
+  it("falls back to the national holiday when a key is missing from the checklist", async () => {
+    const ws = await render({ month: 7, days: 31, holidays: [17], overtimeFlags: { "1:0": true } });
+    assert.equal(ws.getCell("L12").value, "Lembur"); // day 1, from the checklist
+    assert.equal(ws.getCell("L28").value, "Lembur"); // day 17, from the holiday list
+    assert.equal(ws.getCell("L16").value, "Normal"); // day 5, neither
+  });
+
+  it("marks a worked national holiday as YES in column J", async () => {
+    const ws = await render({ month: 7, days: 31, holidays: [17] });
+    assert.equal(ws.getCell("J28").value, "YES");
+    assert.equal(ws.getCell("J12").value, "NO");
   });
 });
 
-describe("countTotalHours", () => {
+describe("sumHours", () => {
   it("matches Excel HOUR(MOD(checkout-checkin,1)) per row", () => {
-    assert.equal(countTotalHours(parseSchedule("1\tSenin\t07:00 - 15:00")).total, 8);
+    assert.equal(sumHours(parseSchedule("1\tSenin\t07:00 - 15:00")), 8);
   });
 
   it("handles cross-midnight shifts", () => {
-    assert.equal(countTotalHours(parseSchedule("1\tSenin\t23:00 - 07:00")).total, 8);
+    assert.equal(sumHours(parseSchedule("1\tSenin\t23:00 - 07:00")), 8);
   });
 
   it("adds up every shift of a multi-shift day", () => {
-    assert.equal(countTotalHours(parseSchedule("1\tSenin\t12 - 16 // 16 - 00")).total, 12);
+    assert.equal(sumHours(parseSchedule("1\tSenin\t12 - 16 // 16 - 00")), 12);
   });
 
   it("ignores off days", () => {
-    assert.equal(countTotalHours(parseSchedule("1\tSenin\toff")).total, 0);
+    assert.equal(sumHours(parseSchedule("1\tSenin\toff")), 0);
   });
 });

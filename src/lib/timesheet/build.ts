@@ -3,9 +3,9 @@ import { parseSchedule } from "./parser";
 import { getHolidays } from "./holidays";
 import { generateTimesheetBuffer, type SignatureEmbed } from "./excel";
 import { MONTHS_INDONESIA_FULL, type EmployeeData } from "./constants";
-import { countTotalHours } from "./pattern";
+import { sumHours } from "./pattern";
 
-export { countTotalHours };
+export { sumHours };
 
 export interface BuildTimesheetInput {
   employee: EmployeeData;
@@ -20,7 +20,7 @@ export interface BuildTimesheetInput {
   signatureMime: string | null;
   /** Dibutuhkan saat autoHoliday aktif: sumber libur ada di tabel holidays_cache. */
   supabase?: SupabaseClient | null;
-  /** Checklist lembur dari user, kunci = `hari:indeksSegmen`. Null = pakai pola otomatis. */
+  /** Checklist lembur dari user, kunci = `hari:indeksSegmen`. Null = pakai hari libur nasional. */
   overtimeFlags?: Record<string, boolean> | null;
 }
 
@@ -76,7 +76,7 @@ export async function buildTimesheet(input: BuildTimesheetInput): Promise<BuildT
   return {
     buffer,
     holidayDays: sortedDays,
-    totalHours: countTotalHours(schedule).total,
+    totalHours: sumHours(schedule),
     hasSignature: !!signature,
     fileName: `Timesheet SMBC ${MONTHS_INDONESIA_FULL[input.month]} ${input.year} - ${input.employee.fullName}.xlsx`,
   };
